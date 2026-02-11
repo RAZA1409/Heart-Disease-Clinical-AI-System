@@ -12,3 +12,6 @@ Timestamp,Method,Accuracy,C,Gamma,Kernel
 2026-02-11 22:37:13,Baseline SVM,81.48,default,default,default
 2026-02-11 22:37:19,Grid Search SVM,83.33,10,0.001,rbf
 2026-02-11 22:37:19,Genetic Algorithm SVM,87.04,32.76385403072798,0.012325061376005666,rbf
+2026-02-11 22:41:31,Baseline SVM,81.48,default,default,default
+2026-02-11 22:41:37,Grid Search SVM,83.33,10,0.001,rbf
+2026-02-11 22:41:37,Genetic Algorithm SVM,87.04,36.06961744961176,0.009299549086640983,rbf
