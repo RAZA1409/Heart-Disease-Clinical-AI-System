@@ -115,3 +115,116 @@ print("Baseline Accuracy:",
 
 print("Grid Search Accuracy:",
       round(grid_accuracy * 100, 2), "%")
+
+
+
+# ===============================
+# 6. GENETIC ALGORITHM (DEAP)
+# ===============================
+
+from deap import base, creator, tools, algorithms
+import random
+
+print("\nStarting Genetic Algorithm Optimization...")
+
+# Fitness function
+def evaluate(individual):
+    C = abs(individual[0])
+    gamma = abs(individual[1])
+
+    # Prevent extremely small values
+    if C < 0.001:
+        C = 0.001
+    if gamma < 0.0001:
+        gamma = 0.0001
+
+    model = SVC(C=C, gamma=gamma, kernel='rbf')
+    model.fit(X_train, y_train)
+    predictions = model.predict(X_test)
+
+    acc = accuracy_score(y_test, predictions)
+    return (acc,)
+
+# Avoid recreation error if rerun
+if "FitnessMax" not in creator.__dict__:
+    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+if "Individual" not in creator.__dict__:
+    creator.create("Individual", list, fitness=creator.FitnessMax)
+
+toolbox = base.Toolbox()
+
+toolbox.register("C", random.uniform, 0.1, 100)
+toolbox.register("gamma", random.uniform, 0.0001, 1)
+
+toolbox.register("individual",
+                 tools.initCycle,
+                 creator.Individual,
+                 (toolbox.C, toolbox.gamma),
+                 n=1)
+
+toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+
+toolbox.register("evaluate", evaluate)
+toolbox.register("mate", tools.cxBlend, alpha=0.5)
+toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=1, indpb=0.2)
+toolbox.register("select", tools.selTournament, tournsize=3)
+
+# GA Parameters
+population = toolbox.population(n=10)
+NGEN = 10
+CXPB = 0.7
+MUTPB = 0.2
+
+fitness_history = []
+
+for gen in range(NGEN):
+    offspring = algorithms.varAnd(population, toolbox, cxpb=CXPB, mutpb=MUTPB)
+
+    fits = toolbox.map(toolbox.evaluate, offspring)
+
+    for fit, ind in zip(fits, offspring):
+        ind.fitness.values = fit
+
+    population = toolbox.select(offspring, k=len(population))
+
+    best = tools.selBest(population, 1)[0]
+    fitness_history.append(best.fitness.values[0])
+
+    print(f"Generation {gen+1} Best Accuracy: {best.fitness.values[0]*100:.2f}%")
+
+best_individual = tools.selBest(population, 1)[0]
+
+ga_C = abs(best_individual[0])
+ga_gamma = abs(best_individual[1])
+
+if ga_C < 0.001:
+    ga_C = 0.001
+if ga_gamma < 0.0001:
+    ga_gamma = 0.0001
+
+print("\nBest GA Parameters:")
+print("C =", ga_C)
+print("gamma =", ga_gamma)
+
+ga_model = SVC(C=ga_C, gamma=ga_gamma, kernel='rbf')
+ga_model.fit(X_train, y_train)
+
+y_pred_ga = ga_model.predict(X_test)
+ga_accuracy = accuracy_score(y_test, y_pred_ga)
+
+print("GA Accuracy:", round(ga_accuracy * 100, 2), "%")
+
+# Log GA experiment
+log_experiment(
+    method="Genetic Algorithm SVM",
+    accuracy=ga_accuracy,
+    params={"C": ga_C, "gamma": ga_gamma, "kernel": "rbf"}
+)
+
+# Plot convergence
+plt.figure()
+plt.plot(range(1, NGEN+1), fitness_history)
+plt.title("GA Convergence")
+plt.xlabel("Generation")
+plt.ylabel("Best Accuracy")
+plt.show()
