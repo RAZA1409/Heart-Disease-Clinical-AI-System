@@ -1,0 +1,5 @@
+Timestamp,Method,Accuracy,C,Gamma,Kernel
+2026-02-11 22:08:38,Baseline SVM,81.48,default,default,default
+2026-02-11 22:08:44,Grid Search SVM,83.33,10,0.001,rbf
+2026-02-11 22:09:01,Baseline SVM,81.48,default,default,default
+2026-02-11 22:09:06,Grid Search SVM,83.33,10,0.001,rbf
