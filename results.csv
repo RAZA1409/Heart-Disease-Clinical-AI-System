@@ -15,3 +15,15 @@ Timestamp,Method,Accuracy,C,Gamma,Kernel
 2026-02-11 22:41:31,Baseline SVM,81.48,default,default,default
 2026-02-11 22:41:37,Grid Search SVM,83.33,10,0.001,rbf
 2026-02-11 22:41:37,Genetic Algorithm SVM,87.04,36.06961744961176,0.009299549086640983,rbf
+2026-02-11 22:47:34,Baseline SVM,81.48,default,default,default
+2026-02-11 22:47:40,Grid Search SVM,83.33,10,0.001,rbf
+2026-02-11 22:47:40,Genetic Algorithm SVM,87.04,35.645028116522624,0.011397543063479433,rbf
+2026-02-11 22:59:16,Baseline SVM,81.48,default,default,default
+2026-02-11 22:59:21,Grid Search SVM,83.33,10,0.001,rbf
+2026-02-11 22:59:23,Genetic Algorithm SVM,55.56,1.1217749373824337,1.7221026963984079,rbf
+2026-02-11 23:02:44,Baseline SVM,81.48,default,default,default
+2026-02-11 23:02:49,Grid Search SVM,83.33,10,0.001,rbf
+2026-02-11 23:02:51,Genetic Algorithm SVM,87.04,15.761984939991757,0.015339972332953904,rbf
+2026-02-11 23:08:19,Baseline SVM,81.48,default,default,default
+2026-02-11 23:08:25,Grid Search SVM,83.33,10,0.001,rbf
+2026-02-11 23:08:26,Genetic Algorithm SVM,87.04,553.0571136455098,0.00018606354163919748,rbf
