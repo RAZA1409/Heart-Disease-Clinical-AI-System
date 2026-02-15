@@ -249,7 +249,7 @@ print("C =", ga_C)
 print("gamma =", ga_gamma)
 
 # Train final GA-optimized model
-ga_model = SVC(C=ga_C, gamma=ga_gamma, kernel='rbf')
+ga_model = SVC(C=ga_C, gamma=ga_gamma, kernel='rbf', probability=True)
 ga_model.fit(X_train, y_train)
 
 y_pred_ga = ga_model.predict(X_test)
@@ -274,3 +274,113 @@ plt.title("GA Convergence")
 plt.xlabel("Generation")
 plt.ylabel("Best Accuracy")
 plt.show()
+
+
+# ===============================
+# 7. CLINICAL INPUT SYSTEM
+# ===============================
+
+def get_valid_input(prompt, min_val=None, max_val=None, allowed_values=None):
+    while True:
+        try:
+            value = float(input(prompt))
+
+            if allowed_values and value not in allowed_values:
+                print(f"Please enter one of: {allowed_values}")
+                continue
+
+            if min_val is not None and value < min_val:
+                print(f"Value must be >= {min_val}")
+                continue
+
+            if max_val is not None and value > max_val:
+                print(f"Value must be <= {max_val}")
+                continue
+
+            return value
+
+        except ValueError:
+            print("Invalid input. Please enter numeric value.")
+
+
+
+print("\n==============================")
+print("HEART DISEASE PREDICTION SYSTEM")
+print("==============================")
+
+print("\nEnter patient details carefully.\n")
+
+age = get_valid_input("Age (18–100 years): ", 18, 100)
+sex = get_valid_input("Sex (1 = Male, 0 = Female): ", allowed_values=[0,1])
+
+print("\nChest Pain Type:")
+print("1 = Typical Angina")
+print("2 = Atypical Angina")
+print("3 = Non-anginal Pain")
+print("4 = Asymptomatic")
+cp = get_valid_input("Enter choice (1–4): ", 1, 4)
+
+trestbps = get_valid_input("Resting Blood Pressure (80–200 mmHg): ", 80, 200)
+chol = get_valid_input("Cholesterol (100–600 mg/dl): ", 100, 600)
+
+fbs = get_valid_input("Fasting Blood Sugar >120? (1 = Yes, 0 = No): ", allowed_values=[0,1])
+restecg = get_valid_input("Resting ECG (0–2): ", 0, 2)
+thalach = get_valid_input("Max Heart Rate (60–220): ", 60, 220)
+exang = get_valid_input("Exercise Induced Angina (1 = Yes, 0 = No): ", allowed_values=[0,1])
+oldpeak = get_valid_input("ST Depression (0–6): ", 0, 6)
+slope = get_valid_input("Slope of ST (1–3): ", 1, 3)
+ca = get_valid_input("Number of vessels (0–3): ", 0, 3)
+
+print("\nThalassemia:")
+print("3 = Normal")
+print("6 = Fixed Defect")
+print("7 = Reversible Defect")
+thal = get_valid_input("Enter choice (3,6,7): ", allowed_values=[3,6,7])
+
+# Create input array in correct feature order
+user_data = pd.DataFrame([{
+    "Age": age,
+    "Sex": sex,
+    "Chest pain type": cp,
+    "Resting blood pressure": trestbps,
+    "Serum cholesterol": chol,
+    "Fasting blood sugar > 120": fbs,
+    "Resting ECG": restecg,
+    "Max heart rate": thalach,
+    "Exercise induced angina": exang,
+    "ST depression": oldpeak,
+    "Slope of ST": slope,
+    "Number of vessels": ca,
+    "Thalassemia": thal
+}])
+
+# Scale using same scaler
+user_data_scaled = scaler.transform(user_data)
+
+# Predict probability of heart disease
+probability = ga_model.predict_proba(user_data_scaled)[0][1]
+
+# Convert probability to binary prediction
+prediction = 1 if probability >= 0.5 else 0
+
+
+if probability < 0.3:
+    risk_level = "LOW"
+elif probability < 0.7:
+    risk_level = "MODERATE"
+else:
+    risk_level = "HIGH"
+
+
+print("\n==============================")
+print("PREDICTION RESULT")
+print("==============================")
+
+if prediction == 1:
+    print("⚠ Heart Disease: PRESENT")
+else:
+    print("✓ Heart Disease: ABSENT")
+
+print(f"Risk Probability: {probability*100:.2f}%")
+print(f"Risk Level: {risk_level}")
+print("==============================")
