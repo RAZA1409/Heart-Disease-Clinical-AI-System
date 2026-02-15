@@ -6,6 +6,8 @@
 import numpy as np
 import pandas as pd
 import joblib
+import os
+
 
 # Load trained model and scaler
 model = joblib.load("models/best_model.pkl")
@@ -55,13 +57,14 @@ user_scaled = scaler.transform(user_data)
 
 # Predict probability
 probability = model.predict_proba(user_scaled)[0][1]
+prediction = 1 if probability >= 0.5 else 0
 
 if probability < 0.3:
-    risk = "LOW"
+    risk_level = "LOW"
 elif probability < 0.7:
-    risk = "MODERATE"
+    risk_level = "MODERATE"
 else:
-    risk = "HIGH"
+    risk_level = "HIGH"
 
 print("\n==============================")
 print("PREDICTION RESULT")
@@ -73,5 +76,48 @@ else:
     print("✓ Heart Disease: ABSENT")
 
 print(f"Risk Probability: {probability*100:.2f}%")
-print(f"Risk Level: {risk}")
+print(f"Risk Level: {risk_level}")
 print("==============================")
+
+# ============================================================
+#  SAVE PATIENT RECORD
+# ============================================================
+
+import datetime
+
+# Create records folder if not exists
+if not os.path.exists("records"):
+    os.makedirs("records")
+
+record_file = "records/patient_records.csv"
+
+# Create dictionary of patient data
+patient_record = {
+    "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    "Age": age,
+    "Sex": sex,
+    "Chest Pain Type": cp,
+    "Resting BP": trestbps,
+    "Cholesterol": chol,
+    "Fasting Blood Sugar": fbs,
+    "Rest ECG": restecg,
+    "Max Heart Rate": thalach,
+    "Exercise Angina": exang,
+    "ST Depression": oldpeak,
+    "Slope": slope,
+    "Vessels": ca,
+    "Thalassemia": thal,
+    "Prediction": "Present" if prediction == 1 else "Absent",
+    "Probability (%)": round(probability * 100, 2),
+    "Risk Level": risk_level
+}
+
+record_df = pd.DataFrame([patient_record])
+
+# Append if file exists, else create new
+if os.path.exists(record_file):
+    record_df.to_csv(record_file, mode='a', header=False, index=False)
+else:
+    record_df.to_csv(record_file, index=False)
+
+print("Patient record saved successfully!")
