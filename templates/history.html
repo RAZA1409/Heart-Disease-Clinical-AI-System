@@ -27,7 +27,19 @@
                 <td>{{ record["Timestamp"] }}</td>
                 <td>{{ record["Prediction"] }}</td>
                 <td>{{ record["Probability (%)"] }}</td>
-                <td>{{ record["Risk Level"] }}</td>
+                <td>
+                    <span class="
+                    {% if record['Risk Level'] == 'LOW' %}
+                        risk-low
+                    {% elif record['Risk Level'] == 'MODERATE' %}
+                        risk-moderate
+                    {% else %}
+                        risk-high
+                    {% endif %}
+    ">
+                    {{ record['Risk Level'] }}
+                    </span>
+                </td>
             </tr>
             {% endfor %}
         </table>

@@ -80,3 +80,31 @@ th {
 tr:nth-child(even) {
     background-color: #f2f2f2;
 }
+
+/* =========================
+   Risk Level Badges
+========================= */
+
+.risk-low {
+    color: #155724;
+    background-color: #d4edda;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+.risk-moderate {
+    color: #856404;
+    background-color: #fff3cd;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+.risk-high {
+    color: #721c24;
+    background-color: #f8d7da;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+}

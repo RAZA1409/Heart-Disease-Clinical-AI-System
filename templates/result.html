@@ -15,9 +15,20 @@
 
         <p><strong>Prediction:</strong> {{ prediction }}</p>
         <p><strong>Risk Probability:</strong> {{ probability }}%</p>
-        <p style="color: {{ color }};">
-            <strong>Risk Level:</strong> {{ risk_level }}
-        </p>
+        <p>
+    <strong>Risk Level:</strong>
+    <span class="
+        {% if risk_level == 'LOW' %}
+            risk-low
+        {% elif risk_level == 'MODERATE' %}
+            risk-moderate
+        {% else %}
+            risk-high
+        {% endif %}
+    ">
+        {{ risk_level }}
+    </span>
+</p>
     </div>
 
     <a href="/">Back to Assessment</a>
