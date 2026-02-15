@@ -2,13 +2,40 @@
 <html>
 <head>
     <title>Clinical Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
 <div class="container">
-    <h1>Clinical Dashboard</h1>
 
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <h1>Clinical Dashboard</h1>
+
+        <div class="top-actions">
+            <a href="{{ url_for('history') }}" class="action-btn">
+                📁 History
+            </a>
+
+            <a href="{{ url_for('change_password') }}" class="password-btn">
+                🔐 Change Password
+            </a>
+
+            <a href="{{ url_for('logout') }}" class="logout-btn">
+                🚪 Logout
+            </a>
+        </div>
+    </div>
+
+    <!-- Start Assessment Button -->
+    <div style="text-align:center; margin: 30px 0;">
+        <a href="{{ url_for('home') }}" class="button-primary">
+            ➕ Start New Assessment
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
     <div class="dashboard-grid">
 
         <div class="card total">
@@ -33,12 +60,11 @@
 
     </div>
 
-    <br>
-    <a href="/">Back to Assessment</a>
-
 </div>
-<footer class="footer">
+
+<div class="footer">
     © 2026 Heart Disease Clinical AI System | Developed by Mohammed Raza
-</footer>
+</div>
+
 </body>
 </html>

@@ -1,52 +1,99 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Prediction Result</title>
+    <title>Clinical Assessment Result</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .result-card {
+            margin-top: 20px;
+        }
+
+        .result-info p {
+            margin: 8px 0;
+            font-size: 16px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 500;
+            color: white;
+            font-size: 14px;
+        }
+
+        .progress-container {
+            margin-top: 15px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 20px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            text-align: right;
+            padding-right: 10px;
+            color: white;
+            font-size: 12px;
+            line-height: 20px;
+        }
+
+        .action-buttons {
+            margin-top: 25px;
+        }
+
+        .action-buttons a {
+            margin-right: 15px;
+        }
+    </style>
 </head>
+
 <body>
 
-<div class="container">
-    <h1>Clinical Assessment Result</h1>
+<div class="container result-card">
 
-    <div class="result-card" style="border-color: {{ color }};">
-        <h2>Patient Name: {{ patient_name }}</h2>
-        <h3>Patient ID: {{ patient_id }}</h3>
+    <h1 style="color:#2c5364;">🫀 Clinical Assessment Result</h1>
 
-        <p>
-        <strong>Prediction:</strong> 
-        <span class="
-            {% if prediction == 'Present' %}
-                risk-high
+    <div class="result-info">
+        <p><strong>Patient Name:</strong> {{ patient_name }}</p>
+        <p><strong>Patient ID:</strong> {{ patient_id }}</p>
+        <p><strong>Prediction:</strong> {{ prediction }}</p>
+        <p><strong>Risk Level:</strong>
+            {% if risk_level == "LOW" %}
+                <span class="badge" style="background:green;">LOW</span>
+            {% elif risk_level == "MODERATE" %}
+                <span class="badge" style="background:orange;">MODERATE</span>
             {% else %}
-                risk-low
+                <span class="badge" style="background:red;">HIGH</span>
             {% endif %}
-            ">
-            {{ prediction }}
-        </span>
         </p>
+
         <p><strong>Risk Probability:</strong> {{ probability }}%</p>
-        <p>
-    <strong>Risk Level:</strong>
-    <span class="
-        {% if risk_level == 'LOW' %}
-            risk-low
-        {% elif risk_level == 'MODERATE' %}
-            risk-moderate
-        {% else %}
-            risk-high
-        {% endif %}
-    ">
-        {{ risk_level }}
-    </span>
-</p>
-    <div class="button-group">
-    <a href="{{ url_for('home') }}" class="action-btn">Back to Assessment</a>
-    <a href="{{ url_for('dashboard') }}" class="action-btn dashboard">Go to Dashboard</a>
-    <a href="{{ url_for('history') }}" class="action-btn history">View Patient History</a>
+
+        <!-- Progress Bar -->
+        <div class="progress-container">
+            <div class="progress-bar"
+                 style="width: {{ probability }}%; background: {{ color }};">
+                {{ probability }}%
+            </div>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <a href="{{ url_for('home') }}" class="button-primary">➕ New Assessment</a>
+        <a href="{{ url_for('dashboard') }}" class="button-primary">📊 Dashboard</a>
+        <a href="{{ url_for('history') }}" class="button-primary">📁 History</a>
+    </div>
+
 </div>
-<footer>
-    <p>© 2026 Heart Disease Clinical AI System | Developed by Mohammed Raza</p>
-</footer>
+
+<div class="footer">
+    © 2026 Heart Disease Clinical AI System | Developed by Mohammed Raza
+</div>
+
 </body>
 </html>
