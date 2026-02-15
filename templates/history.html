@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Patient History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+    <h2>Patient History Records</h2>
+
+    {% if records %}
+        <table>
+            <tr>
+                <th>Patient ID</th>
+                <th>Name</th>
+                <th>Timestamp</th>
+                <th>Prediction</th>
+                <th>Probability (%)</th>
+                <th>Risk Level</th>
+            </tr>
+
+            {% for record in records %}
+            <tr>
+                <td>{{ record["Patient ID"] }}</td>
+                <td>{{ record["Patient Name"] }}</td>
+                <td>{{ record["Timestamp"] }}</td>
+                <td>{{ record["Prediction"] }}</td>
+                <td>{{ record["Probability (%)"] }}</td>
+                <td>{{ record["Risk Level"] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>No patient records found.</p>
+    {% endif %}
+
+    <br>
+    <a href="/">Back to Assessment</a>
+</div>
+
+</body>
+</html>
