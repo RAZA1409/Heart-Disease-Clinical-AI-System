@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clinical Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+    <h1>Clinical Dashboard</h1>
+
+    <div class="dashboard-grid">
+
+        <div class="card total">
+            <h2>Total Patients</h2>
+            <p>{{ total }}</p>
+        </div>
+
+        <div class="card low">
+            <h2>Low Risk</h2>
+            <p>{{ low }}</p>
+        </div>
+
+        <div class="card moderate">
+            <h2>Moderate Risk</h2>
+            <p>{{ moderate }}</p>
+        </div>
+
+        <div class="card high">
+            <h2>High Risk</h2>
+            <p>{{ high }}</p>
+        </div>
+
+    </div>
+
+    <br>
+    <a href="/">Back to Assessment</a>
+
+</div>
+<footer class="footer">
+    © 2026 Heart Disease Clinical AI System | Developed by Mohammed Raza
+</footer>
+</body>
+</html>

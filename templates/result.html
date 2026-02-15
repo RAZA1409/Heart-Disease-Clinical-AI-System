@@ -13,7 +13,18 @@
         <h2>Patient Name: {{ patient_name }}</h2>
         <h3>Patient ID: {{ patient_id }}</h3>
 
-        <p><strong>Prediction:</strong> {{ prediction }}</p>
+        <p>
+        <strong>Prediction:</strong> 
+        <span class="
+            {% if prediction == 'Present' %}
+                risk-high
+            {% else %}
+                risk-low
+            {% endif %}
+            ">
+            {{ prediction }}
+        </span>
+        </p>
         <p><strong>Risk Probability:</strong> {{ probability }}%</p>
         <p>
     <strong>Risk Level:</strong>
@@ -29,12 +40,13 @@
         {{ risk_level }}
     </span>
 </p>
-    </div>
-
-    <a href="/">Back to Assessment</a>
-    <br><br>
-    <a href="/history">View Patient History</a>
+    <div class="button-group">
+    <a href="{{ url_for('home') }}" class="action-btn">Back to Assessment</a>
+    <a href="{{ url_for('dashboard') }}" class="action-btn dashboard">Go to Dashboard</a>
+    <a href="{{ url_for('history') }}" class="action-btn history">View Patient History</a>
 </div>
-
+<footer>
+    <p>© 2026 Heart Disease Clinical AI System | Developed by Mohammed Raza</p>
+</footer>
 </body>
 </html>

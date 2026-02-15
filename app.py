@@ -155,6 +155,32 @@ def history():
 
     return render_template("history.html", records=records)
 
+
+@app.route('/dashboard')
+def dashboard():
+
+    record_file = "records/patient_records.csv"
+
+    if not os.path.exists(record_file):
+        return render_template("dashboard.html",
+                               total=0,
+                               low=0,
+                               moderate=0,
+                               high=0)
+
+    df = pd.read_csv(record_file)
+
+    total = len(df)
+    low = len(df[df["Risk Level"] == "LOW"])
+    moderate = len(df[df["Risk Level"] == "MODERATE"])
+    high = len(df[df["Risk Level"] == "HIGH"])
+
+    return render_template("dashboard.html",
+                           total=total,
+                           low=low,
+                           moderate=moderate,
+                           high=high)
+
 # ------------------------------------------------------------
 # Run App
 # ------------------------------------------------------------
