@@ -1,41 +1,50 @@
-# 🫀 Heart Disease Clinical AI System  
-### GA-Optimized SVM + Flask Web Application
+# 🫀 Heart Disease Clinical AI System (GA-Optimized Machine Learning Model)
 
-An end-to-end AI-powered healthcare risk prediction system that uses **Genetic Algorithm (GA)** to optimize **Support Vector Machine (SVM)** hyperparameters and provides predictions through a professional **Flask web interface**.
+### Intelligent Clinical Risk Prediction Platform with Genetic Algorithm Based Hyperparameter Optimization
 
-This project simulates a real-world clinical decision support system for heart disease risk assessment and demonstrates the integration of Machine Learning, Optimization Techniques, and Full-Stack Development.
+An end-to-end AI-powered clinical decision support system that predicts heart disease risk using a **Genetic Algorithm (GA) optimized Support Vector Machine (SVM)** model.
 
----
+This system integrates:
+
+- 🧠 Machine Learning Model Optimization
+- 🔬 Evolutionary Algorithm (Genetic Algorithm)
+- 🌐 Full-Stack Flask Web Application
+- 🔐 Secure Authentication System
+- 📊 Clinical Dashboard & Risk Analytics
+- 📁 Patient Record Management
+
+The project simulates a real-world hospital clinical environment and demonstrates how optimization techniques can enhance predictive performance in healthcare AI systems.
 
 ## 🚀 Features
 
 - 🔬 Genetic Algorithm based Hyperparameter Optimization
 - 🤖 Optimized SVM Model for Heart Disease Prediction
 - 🌐 Interactive Flask Web Interface
+- 🔐 Secure Login & Session Management
+- 🔑 Password Change System
 - 🆔 Automatic Patient ID Generation
-- 📊 Risk Classification (Low / Medium / High)
-- 📁 Patient Record Storage (CSV-based)
-- 📈 Experiment Logging for Model Comparison
+- 📊 Risk Classification (Low / Moderate / High)
+- 📁 Patient Record Storage & History Management
+- 🗑 Record Deletion Functionality
 - 🧠 Modular ML Architecture (Training & Prediction separated)
 
 ---
 
 ## 🏗 Project Architecture
 
-```
 Heart-Disease-Clinical-AI-System/
 │
 ├── app.py                     # Flask Web Application
+├── auth.py                    # Authentication & Database Setup
 ├── train_model.py             # Model training + GA optimization
 ├── predict.py                 # Prediction logic
-├── main.py                    # Main execution script
 ├── experiment_logger.py       # Logs model experiments
-├── results.csv                # Stored patient predictions
-├── Heart_Disease_Cleaned.csv  # Cleaned dataset
+├── database.db                # SQLite authentication database
+├── records/                   # Patient history storage
 ├── templates/                 # HTML templates
 ├── static/                    # CSS styling
+├── models/                    # Saved ML models
 └── requirements.txt           # Project dependencies
-```
 
 ---
 
@@ -53,7 +62,9 @@ Heart-Disease-Clinical-AI-System/
 
 - Python
 - Scikit-learn
-- Genetic Algorithm
+- Genetic Algorithm (Custom Evolutionary Optimization)
+- SQLite (Authentication Database)
+- Joblib (Model Serialization)
 - Flask
 - HTML / CSS
 - Pandas
@@ -73,6 +84,15 @@ Instead of traditional Grid Search, this system uses a **Genetic Algorithm (GA)*
 This approach improves search efficiency and explores a broader solution space compared to exhaustive grid search.
 
 ---
+
+## 🔐 Authentication & Security
+
+- Secure password hashing using Werkzeug
+- Session-based authentication
+- Protected routes (Dashboard, History, Assessment)
+- Password change functionality
+- Confirmation before record deletion
+
 
 ## 🖥 How To Run Locally
 
@@ -103,9 +123,7 @@ python app.py
 
 Open in browser:
 
-```
-http://127.0.0.1:5000
-```
+http://127.0.0.1:5000/login
 
 ---
 
@@ -122,12 +140,12 @@ This project can be used for:
 
 ## 🔮 Future Enhancements
 
-- 🔐 User Authentication System
-- 🗄 SQL Database Integration (SQLite / MySQL)
-- 📄 PDF Medical Report Generation
-- 📊 Interactive Analytics Dashboard
+- 🗄 Migration from CSV to Full SQL Database
+- 📄 PDF Medical Report Export
+- 📊 Interactive Risk Distribution Charts
+- 🧑‍⚕️ Role-Based Access Control (Admin / Doctor)
 - ☁ Cloud Deployment (Render / AWS)
-
+- 🔒 Advanced Security (Session Timeout, Rate Limiting)
 ---
 
 ## 👨‍💻 Author
