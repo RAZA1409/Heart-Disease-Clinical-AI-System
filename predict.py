@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import joblib
 import os
-
+import datetime
 
 # Load trained model and scaler
 model = joblib.load("models/best_model.pkl")
@@ -19,6 +19,22 @@ print("HEART DISEASE PREDICTION SYSTEM")
 print("==============================")
 
 print("\nEnter patient details carefully.\n")
+
+# ===============================
+# Patient Basic Information
+# ===============================
+# Generate automatic Patient ID
+
+
+patient_name = input("Patient Name: ").strip()
+
+if patient_name == "":
+    patient_name = "Unknown"
+
+patient_name = patient_name.title()
+
+# Generate automatic Patient ID immediately
+patient_id = "PID" + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
 # Collect inputs
 age = float(input("Age: "))
@@ -77,13 +93,19 @@ else:
 
 print(f"Risk Probability: {probability*100:.2f}%")
 print(f"Risk Level: {risk_level}")
+
+# ✅ ADD THESE TWO LINES HERE
+print(f"\nPatient Name: {patient_name}")
+print(f"Patient ID: {patient_id}")
+
 print("==============================")
+
 
 # ============================================================
 #  SAVE PATIENT RECORD
 # ============================================================
 
-import datetime
+
 
 # Create records folder if not exists
 if not os.path.exists("records"):
@@ -91,8 +113,10 @@ if not os.path.exists("records"):
 
 record_file = "records/patient_records.csv"
 
-# Create dictionary of patient data
+# Create dictionary in FINAL CORRECT ORDER
 patient_record = {
+    "Patient ID": patient_id,
+    "Patient Name": patient_name,
     "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     "Age": age,
     "Sex": sex,
@@ -114,10 +138,10 @@ patient_record = {
 
 record_df = pd.DataFrame([patient_record])
 
-# Append if file exists, else create new
-if os.path.exists(record_file):
-    record_df.to_csv(record_file, mode='a', header=False, index=False)
-else:
+# If file does NOT exist → create with header
+if not os.path.exists(record_file):
     record_df.to_csv(record_file, index=False)
+else:
+    record_df.to_csv(record_file, mode='a', header=False, index=False)
 
 print("Patient record saved successfully!")
