@@ -22,7 +22,7 @@ init_db()
 # ------------------------------------------------------------
 # Load trained model files
 # ------------------------------------------------------------
-model = joblib.load("models/best_model.pkl")
+model = joblib.load("models/model.pkl")
 scaler = joblib.load("models/scaler.pkl")
 feature_columns = joblib.load("models/feature_columns.pkl")
 
@@ -189,13 +189,10 @@ def predict():
 
     if probability < 0.3:
         risk_level = "LOW"
-        color = "green"
     elif probability < 0.7:
         risk_level = "MODERATE"
-        color = "orange"
     else:
         risk_level = "HIGH"
-        color = "red"
 
     patient_id = "PID" + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
@@ -210,6 +207,17 @@ def predict():
         "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "Age": age,
         "Sex": sex,
+        "Chest Pain Type": cp,
+        "Resting BP": trestbps,
+        "Cholesterol": chol,
+        "Fasting Blood Sugar": fbs,
+        "Rest ECG": restecg,
+        "Max Heart Rate": thalach,
+        "Exercise Angina": exang,
+        "ST Depression": oldpeak,
+        "Slope": slope,
+        "Vessels": ca,
+        "Thalassemia": thal,
         "Prediction": "Present" if prediction == 1 else "Absent",
         "Probability (%)": round(probability * 100, 2),
         "Risk Level": risk_level
@@ -229,7 +237,7 @@ def predict():
         probability=round(probability * 100, 2),
         prediction="Present" if prediction == 1 else "Absent",
         risk_level=risk_level,
-        color=color
+        
     )
 
 # ------------------------------------------------------------
@@ -251,6 +259,26 @@ def history():
 
     return render_template("history.html", records=records)
 
+@app.route("/patient/<patient_id>")
+def patient_detail(patient_id):
+
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    record_file = "records/patient_records.csv"
+
+    if not os.path.exists(record_file):
+        return redirect(url_for("history"))
+
+    df = pd.read_csv(record_file)
+    patient = df[df["Patient ID"] == patient_id]
+
+    if patient.empty:
+        return redirect(url_for("history"))
+
+    patient = patient.iloc[0].to_dict()
+
+    return render_template("patient_detail.html", patient=patient)
 # ------------------------------------------------------------
 # Delete Patient Record
 # ------------------------------------------------------------

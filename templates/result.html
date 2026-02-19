@@ -76,10 +76,24 @@
 
         <!-- Progress Bar -->
         <div class="progress-container">
-            <div class="progress-bar"
-                 style="width: {{ probability }}%; background: {{ color }};">
-                {{ probability }}%
-            </div>
+            {% if risk_level == "LOW" %}
+    <div class="progress-bar"
+         style="width: {{ probability }}%; background: #2e7d32;">
+        {{ probability }}%
+    </div>
+
+{% elif risk_level == "MODERATE" %}
+    <div class="progress-bar"
+         style="width: {{ probability }}%; background: #ef6c00;">
+        {{ probability }}%
+    </div>
+
+{% else %}
+    <div class="progress-bar"
+         style="width: {{ probability }}%; background: #c62828;">
+        {{ probability }}%
+    </div>
+{% endif %}
         </div>
     </div>
 

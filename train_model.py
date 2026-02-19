@@ -48,7 +48,7 @@ def evaluate(individual):
     C = 10 ** logC
     gamma = 10 ** logGamma
 
-    model = SVC(C=C, gamma=gamma, kernel='rbf')
+    model = SVC(C=C, gamma=gamma, kernel='rbf',probability=True)
     model.fit(X_train, y_train)
     predictions = model.predict(X_test)
 

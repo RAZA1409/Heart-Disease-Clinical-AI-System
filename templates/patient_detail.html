@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Patient Detail</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #203a43, #2c5364);
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 30px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+        }
+
+        h2 {
+            color: #2c5364;
+            margin-bottom: 25px;
+        }
+
+        .main-layout {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .left-panel {
+            flex: 1;
+            min-width: 350px;
+        }
+
+        .right-panel {
+            width: 320px;
+            text-align: center;
+        }
+
+        .badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            color: white;
+            font-weight: 500;
+        }
+
+        .low { background: green; }
+        .moderate { background: orange; }
+        .high { background: red; }
+
+        .recommendation-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f4f6f8;
+            border-radius: 8px;
+        }
+
+        .feature-grid {
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .feature-card {
+            background: #f4f6f8;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            transition: 0.2s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+            background: #e9eef2;
+        }
+
+        .feature-card h4 {
+            margin: 0;
+            color: #2c5364;
+            font-size: 13px;
+        }
+
+        .feature-card p {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 6px 0 0;
+        }
+
+        .chart-section {
+            margin-top: 35px;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-top: 30px;
+            background: #2c5364;
+            color: white;
+            padding: 8px 18px;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+
+        .back-btn:hover {
+            background: #203a43;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Patient Detail Analytics</h2>
+
+    <div class="main-layout">
+
+        <!-- LEFT SIDE -->
+        <div class="left-panel">
+
+            <p><strong>Name:</strong> {{ patient['Patient Name'] }}</p>
+            <p><strong>Probability:</strong> {{ patient['Probability (%)'] }}%</p>
+
+            <p><strong>Risk Level:</strong>
+                {% if patient["Risk Level"] == "LOW" %}
+                    <span class="badge low">LOW</span>
+                {% elif patient["Risk Level"] == "MODERATE" %}
+                    <span class="badge moderate">MODERATE</span>
+                {% elif patient["Risk Level"] == "HIGH" %}
+                    <span class="badge high">HIGH</span>
+                {% endif %}
+            </p>
+
+            <div class="recommendation-box">
+                <h4 style="color:#2c5364;">AI Clinical Recommendation</h4>
+
+                {% if patient["Risk Level"] == "HIGH" %}
+                    <p style="color:red;">
+                        ⚠ High cardiovascular risk detected. Immediate cardiology consultation recommended.
+                    </p>
+                {% elif patient["Risk Level"] == "MODERATE" %}
+                    <p style="color:orange;">
+                        ⚠ Moderate risk detected. Lifestyle modification and monitoring advised.
+                    </p>
+                {% elif patient["Risk Level"] == "LOW" %}
+                    <p style="color:green;">
+                        ✓ Low immediate risk. Maintain healthy lifestyle.
+                    </p>
+                {% endif %}
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card"><h4>Age</h4><p>{{ patient['Age'] }}</p></div>
+                <div class="feature-card"><h4>Cholesterol</h4><p>{{ patient['Cholesterol'] }}</p></div>
+                <div class="feature-card"><h4>Resting BP</h4><p>{{ patient['Resting BP'] }}</p></div>
+                <div class="feature-card"><h4>Max Heart Rate</h4><p>{{ patient['Max Heart Rate'] }}</p></div>
+                <div class="feature-card"><h4>Chest Pain Type</h4><p>{{ patient['Chest Pain Type'] }}</p></div>
+                <div class="feature-card"><h4>ST Depression</h4><p>{{ patient['ST Depression'] }}</p></div>
+            </div>
+
+            <!-- Feature Bar Chart -->
+            <div class="chart-section">
+                <h3 style="color:#2c5364;">Clinical Parameter Overview</h3>
+                <div style="height:300px;">
+                    <div style="height:300px;">
+                        <canvas id="featureChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT SIDE -->
+        <div class="right-panel">
+            <canvas id="riskChart"></canvas>
+        </div>
+
+    </div>
+
+    <a href="{{ url_for('history') }}" class="back-btn">← Back to History</a>
+
+</div>
+
+<script>
+    const probability = {{ patient["Probability (%)"] }};
+
+    /* DONUT CHART */
+    const centerTextPlugin = {
+        id: 'centerText',
+        beforeDraw(chart) {
+            const { width, height, ctx } = chart;
+            ctx.save();
+            ctx.font = "22px Poppins";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "#2c5364";
+            const text = probability + "%";
+            const textX = (width - ctx.measureText(text).width) / 2;
+            const textY = height / 2;
+            ctx.fillText(text, textX, textY);
+            ctx.restore();
+        }
+    };
+
+    const riskCtx = document.getElementById('riskChart').getContext('2d');
+
+    new Chart(riskCtx, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [probability, 100 - probability],
+                backgroundColor: [
+                    probability < 30 ? 'green' :
+                    probability < 70 ? 'orange' : 'red',
+                    '#e0e0e0'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            plugins: { legend: { display: false } }
+        },
+        plugins: [centerTextPlugin]
+    });
+
+    /* FEATURE BAR CHART */
+    const featureCtx = document.getElementById('featureChart').getContext('2d');
+
+    new Chart(featureCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Age', 'Cholesterol', 'Resting BP', 'Max HR', 'ST Depression'],
+            datasets: [{
+                data: [
+                    {{ patient['Age'] }},
+                    {{ patient['Cholesterol'] }},
+                    {{ patient['Resting BP'] }},
+                    {{ patient['Max Heart Rate'] }},
+                    {{ patient['ST Depression'] }}
+                ],
+                backgroundColor: '#2c5364',
+                borderRadius: 6,
+                barThickness: 40
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false } },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#e0e0e0' }
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
