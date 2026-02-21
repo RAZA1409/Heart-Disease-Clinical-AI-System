@@ -1,227 +1,298 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Patient Detail</title>
+    <title>Patient Clinical Report</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <style>
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(to right, #203a43, #2c5364);
-            margin: 0;
-        }
+<style>
 
-        .container {
-            width: 90%;
-            max-width: 1200px;
-            margin: 30px auto;
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-        }
+body{
+    font-family:'Poppins',sans-serif;
+    margin:0;
+    background:linear-gradient(135deg,#1e3c4f,#2c5364);
+}
 
-        h2 {
-            color: #2c5364;
-            margin-bottom: 25px;
-        }
+/* MAIN CONTAINER */
+.container{
+    width:92%;
+    max-width:1350px;
+    margin:40px auto;
+    background:#ffffff;
+    padding:40px;
+    border-radius:22px;
+    box-shadow:0 25px 50px rgba(0,0,0,0.15);
+}
 
-        .main-layout {
-            display: flex;
-            gap: 40px;
-            align-items: flex-start;
-            flex-wrap: wrap;
-        }
+/* HEADER */
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:30px;
+}
 
-        .left-panel {
-            flex: 1;
-            min-width: 350px;
-        }
+.header h2{
+    margin:0;
+    font-weight:700;
+    color:#1e293b;
+}
 
-        .right-panel {
-            width: 320px;
-            height: 320px;
-        }
+/* RISK BADGE */
+.badge{
+    padding:10px 24px;
+    border-radius:30px;
+    font-weight:600;
+    color:white;
+    font-size:14px;
+}
 
-        .badge {
-            padding: 6px 16px;
-            border-radius: 20px;
-            color: white;
-            font-weight: 500;
-        }
+.low{ background:linear-gradient(135deg,#22c55e,#15803d); }
+.moderate{ background:linear-gradient(135deg,#f59e0b,#d97706); }
+.high{ background:linear-gradient(135deg,#ef4444,#7f1d1d); }
 
-        .low { background: green; }
-        .moderate { background: orange; }
-        .high { background: red; }
+/* HERO SECTION */
+.hero{
+    background:linear-gradient(135deg,#1e293b,#334155);
+    color:white;
+    padding:30px;
+    border-radius:20px;
+    margin-bottom:35px;
+}
 
-        .recommendation-box {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f4f6f8;
-            border-radius: 8px;
-        }
+.patient-name{
+    font-size:34px;
+    font-weight:700;
+    margin-bottom:8px;
+}
 
-        .feature-grid {
-            margin-top: 25px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
+.probability{
+    font-size:50px;
+    font-weight:700;
+    color:#38bdf8;
+}
 
-        .feature-card {
-            background: #f4f6f8;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            transition: 0.2s ease;
-        }
+/* MAIN LAYOUT */
+.main-layout{
+    display:flex;
+    gap:40px;
+    flex-wrap:wrap;
+}
 
-        .feature-card:hover {
-            transform: translateY(-3px);
-            background: #e9eef2;
-        }
+.left{
+    flex:1;
+    min-width:420px;
+}
 
-        .feature-card h4 {
-            margin: 0;
-            color: #2c5364;
-            font-size: 13px;
-        }
+.right{
+    width:420px;
+    background:linear-gradient(135deg,#f8fafc,#eef2f7);
+    border-radius:20px;
+    padding:30px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.08);
+}
 
-        .feature-card p {
-            font-size: 16px;
-            font-weight: 600;
-            margin: 6px 0 4px;
-        }
+/* RECOMMENDATION */
+.recommendation{
+    padding:22px;
+    border-radius:16px;
+    margin-bottom:30px;
+    background:#f8fafc;
+    border-left:6px solid #2563eb;
+}
 
-        .status-normal { color: green; font-size: 12px; }
-        .status-high { color: red; font-size: 12px; }
-        .status-low { color: orange; font-size: 12px; }
+/* FEATURE CARDS */
+.feature-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+    margin-bottom:35px;
+}
 
-        .chart-section {
-            margin-top: 35px;
-        }
+.card{
+    padding:22px;
+    border-radius:18px;
+    color:white;
+    box-shadow:0 10px 20px rgba(0,0,0,0.08);
+    transition:0.3s;
+}
 
-        .back-btn {
-            display: inline-block;
-            margin-top: 30px;
-            background: #2c5364;
-            color: white;
-            padding: 8px 18px;
-            text-decoration: none;
-            border-radius: 6px;
-        }
+.card:hover{
+    transform:translateY(-6px);
+}
 
-        .back-btn:hover {
-            background: #203a43;
-        }
-    </style>
+.card h4{
+    margin:0;
+    font-size:14px;
+    opacity:0.9;
+}
+
+.card p{
+    font-size:24px;
+    margin:10px 0 5px;
+    font-weight:600;
+}
+
+.normal{ background:linear-gradient(135deg,#0ea5e9,#0369a1); }
+.warning{ background:linear-gradient(135deg,#f59e0b,#b45309); }
+.danger{ background:linear-gradient(135deg,#ef4444,#7f1d1d); }
+
+/* BAR CHART */
+.chart-box{
+    background:#f8fafc;
+    padding:25px;
+    border-radius:18px;
+    box-shadow:0 10px 20px rgba(0,0,0,0.05);
+}
+
+/* RIGHT PANEL SECTIONS */
+.panel-box{
+    background:white;
+    padding:20px;
+    border-radius:16px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.06);
+    margin-bottom:20px;
+}
+
+.severity-bar{
+    height:12px;
+    border-radius:10px;
+    background:#e5e7eb;
+    overflow:hidden;
+    margin-top:10px;
+}
+
+.severity-fill{
+    height:100%;
+    transition:0.6s;
+}
+
+/* BACK BUTTON */
+.back-btn{
+    display:inline-block;
+    margin-top:40px;
+    padding:12px 26px;
+    background:linear-gradient(135deg,#203a43,#2c5364);
+    color:white;
+    text-decoration:none;
+    border-radius:12px;
+    font-weight:500;
+    transition:0.3s;
+}
+
+.back-btn:hover{
+    transform:translateY(-3px);
+    box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+
+</style>
 </head>
 
 <body>
 
 <div class="container">
 
-    <h2>Patient Detail Analytics</h2>
+    <div class="header">
+        <h2>🧾 Patient Clinical Analytics</h2>
+
+        {% if patient["Risk Level"] == "LOW" %}
+            <span class="badge low">LOW RISK</span>
+        {% elif patient["Risk Level"] == "MODERATE" %}
+            <span class="badge moderate">MODERATE RISK</span>
+        {% else %}
+            <span class="badge high">HIGH RISK</span>
+        {% endif %}
+    </div>
+
+    <!-- HERO -->
+    <div class="hero">
+        <div class="patient-name">{{ patient['Patient Name'] }}</div>
+        <div class="probability">{{ patient['Probability (%)'] }}%</div>
+    </div>
 
     <div class="main-layout">
 
         <!-- LEFT SIDE -->
-        <div class="left-panel">
+        <div class="left">
 
-            <p><strong>Name:</strong> {{ patient['Patient Name'] }}</p>
-            <p><strong>Probability:</strong> {{ patient['Probability (%)'] }}%</p>
-
-            <p><strong>Risk Level:</strong>
-                {% if patient["Risk Level"] == "LOW" %}
-                    <span class="badge low">LOW</span>
-                {% elif patient["Risk Level"] == "MODERATE" %}
-                    <span class="badge moderate">MODERATE</span>
-                {% elif patient["Risk Level"] == "HIGH" %}
-                    <span class="badge high">HIGH</span>
-                {% endif %}
-            </p>
-
-            <div class="recommendation-box">
-                <h4 style="color:#2c5364;">AI Clinical Recommendation</h4>
-
+            <div class="recommendation">
+                <h4>🧠 AI Clinical Recommendation</h4>
                 {% if patient["Risk Level"] == "HIGH" %}
-                    <p style="color:red;">
-                        ⚠ High cardiovascular risk detected. Immediate cardiology consultation recommended.
-                    </p>
+                    <p style="color:#dc2626;">Immediate cardiology consultation recommended.</p>
                 {% elif patient["Risk Level"] == "MODERATE" %}
-                    <p style="color:orange;">
-                        ⚠ Moderate risk detected. Lifestyle modification and monitoring advised.
-                    </p>
-                {% elif patient["Risk Level"] == "LOW" %}
-                    <p style="color:green;">
-                        ✓ Low immediate risk. Maintain healthy lifestyle.
-                    </p>
+                    <p style="color:#d97706;">Lifestyle modification & monitoring advised.</p>
+                {% else %}
+                    <p style="color:#16a34a;">Low immediate risk. Maintain healthy lifestyle.</p>
                 {% endif %}
             </div>
 
-            <!-- Feature Cards with Status -->
             <div class="feature-grid">
-
-                <div class="feature-card">
+                <div class="card normal">
                     <h4>Cholesterol</h4>
                     <p>{{ patient['Cholesterol'] }}</p>
-                    {% if patient['Cholesterol Status'] == "HIGH" %}
-                        <div class="status-high">High ↑</div>
-                    {% else %}
-                        <div class="status-normal">Normal ✓</div>
-                    {% endif %}
                 </div>
 
-                <div class="feature-card">
+                <div class="card normal">
                     <h4>Resting BP</h4>
                     <p>{{ patient['Resting BP'] }}</p>
-                    {% if patient['Resting BP Status'] == "HIGH" %}
-                        <div class="status-high">High ↑</div>
-                    {% elif patient['Resting BP Status'] == "LOW" %}
-                        <div class="status-low">Low ↓</div>
-                    {% else %}
-                        <div class="status-normal">Normal ✓</div>
-                    {% endif %}
                 </div>
 
-                <div class="feature-card">
+                <div class="card warning">
                     <h4>Max Heart Rate</h4>
                     <p>{{ patient['Max Heart Rate'] }}</p>
-                    {% if patient['Max Heart Rate Status'] == "HIGH" %}
-                        <div class="status-high">High ↑</div>
-                    {% elif patient['Max Heart Rate Status'] == "LOW" %}
-                        <div class="status-low">Low ↓</div>
-                    {% else %}
-                        <div class="status-normal">Normal ✓</div>
-                    {% endif %}
                 </div>
 
-                <div class="feature-card">
+                <div class="card danger">
                     <h4>ST Depression</h4>
                     <p>{{ patient['ST Depression'] }}</p>
-                    {% if patient['ST Depression Status'] == "HIGH" %}
-                        <div class="status-high">High ↑</div>
-                    {% else %}
-                        <div class="status-normal">Normal ✓</div>
-                    {% endif %}
                 </div>
-
             </div>
 
-            <!-- Feature Chart -->
-            <div class="chart-section">
-                <h3 style="color:#2c5364;">Clinical Parameter Overview</h3>
-                <div style="height:280px;">
-                    <canvas id="featureChart"></canvas>
-                </div>
+            <div class="chart-box">
+                <h3>📊 Clinical Parameter Overview</h3>
+                <canvas id="featureChart"></canvas>
             </div>
 
         </div>
 
         <!-- RIGHT SIDE -->
-        <div class="right-panel">
-            <canvas id="riskChart"></canvas>
+        <div class="right">
+
+            <div style="margin-bottom:30px;">
+                <canvas id="riskChart" style="height:280px;"></canvas>
+            </div>
+
+            <div class="panel-box">
+                <h4>📊 Risk Intelligence</h4>
+                <p><strong>Prediction:</strong> {{ patient['Prediction'] }}</p>
+                <p><strong>Patient ID:</strong> {{ patient['Patient ID'] }}</p>
+                <p><strong>Assessment Time:</strong><br>{{ patient['Timestamp'] }}</p>
+            </div>
+
+            <div class="panel-box">
+                <h4>⚡ Severity Meter</h4>
+
+                <div class="severity-bar">
+                    <div class="severity-fill"
+                         style="
+                         width:{{ patient['Probability (%)'] }}%;
+                         background:
+                         {% if patient['Probability (%)']|float < 30 %}
+                         #22c55e
+                         {% elif patient['Probability (%)']|float < 70 %}
+                         #f59e0b
+                         {% else %}
+                         #ef4444
+                         {% endif %};">
+                    </div>
+                </div>
+
+                <p style="margin-top:8px;font-size:13px;color:#64748b;">
+                    Severity Score: {{ patient['Probability (%)'] }}%
+                </p>
+            </div>
+
         </div>
 
     </div>
@@ -231,68 +302,63 @@
 </div>
 
 <script>
-    const probability = {{ patient["Probability (%)"] }};
 
-    const centerTextPlugin = {
-        id: 'centerText',
-        beforeDraw(chart) {
-            const { width, height, ctx } = chart;
-            ctx.save();
-            ctx.font = "22px Poppins";
-            ctx.textBaseline = "middle";
-            ctx.fillStyle = "#2c5364";
-            const text = probability + "%";
-            const textX = (width - ctx.measureText(text).width) / 2;
-            const textY = height / 2;
-            ctx.fillText(text, textX, textY);
-            ctx.restore();
-        }
-    };
+const probability = {{ patient["Probability (%)"] }};
 
-    new Chart(document.getElementById('riskChart'), {
-        type: 'doughnut',
-        data: {
-            datasets: [{
-                data: [probability, 100 - probability],
-                backgroundColor: [
-                    probability < 30 ? 'green' :
-                    probability < 70 ? 'orange' : 'red',
-                    '#e0e0e0'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            cutout: '75%',
-            plugins: { legend: { display: false } }
-        },
-        plugins: [centerTextPlugin]
-    });
+const centerTextPlugin = {
+    id:'centerText',
+    beforeDraw(chart){
+        const {width,height,ctx}=chart;
+        ctx.save();
+        ctx.font="bold 28px Poppins";
+        ctx.fillStyle="#1e293b";
+        ctx.textAlign="center";
+        ctx.textBaseline="middle";
+        ctx.fillText(probability+"%",width/2,height/2);
+    }
+};
 
-    new Chart(document.getElementById('featureChart'), {
-        type: 'bar',
-        data: {
-            labels: ['Cholesterol', 'Resting BP', 'Max HR', 'ST Depression'],
-            datasets: [{
-                data: [
-                    {{ patient['Cholesterol'] }},
-                    {{ patient['Resting BP'] }},
-                    {{ patient['Max Heart Rate'] }},
-                    {{ patient['ST Depression'] }}
-                ],
-                backgroundColor: '#2c5364',
-                borderRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true }
-            }
-        }
-    });
+new Chart(document.getElementById('riskChart'),{
+    type:'doughnut',
+    data:{
+        datasets:[{
+            data:[probability,100-probability],
+            backgroundColor:[
+                probability<30?'#22c55e':
+                probability<70?'#f59e0b':'#ef4444',
+                '#e5e7eb'
+            ],
+            borderWidth:0
+        }]
+    },
+    options:{
+        cutout:'75%',
+        plugins:{legend:{display:false}}
+    },
+    plugins:[centerTextPlugin]
+});
+
+new Chart(document.getElementById('featureChart'),{
+    type:'bar',
+    data:{
+        labels:['Cholesterol','Resting BP','Max HR','ST Depression'],
+        datasets:[{
+            data:[
+                {{ patient['Cholesterol'] }},
+                {{ patient['Resting BP'] }},
+                {{ patient['Max Heart Rate'] }},
+                {{ patient['ST Depression'] }}
+            ],
+            backgroundColor:'#2c5364',
+            borderRadius:8
+        }]
+    },
+    options:{
+        plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:true}}
+    }
+});
+
 </script>
 
 </body>

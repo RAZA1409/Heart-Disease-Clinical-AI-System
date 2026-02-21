@@ -6,106 +6,174 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
+<style>
 
-        thead {
-            background: #2c5364;
-            color: white;
-        }
+    .top-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 30px 0;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
 
-        th, td {
-            padding: 14px;
-            text-align: center;
-            font-size: 14px;
-        }
+    .search-box {
+        position: relative;
+    }
 
-        tbody tr:nth-child(even) {
-            background: #f5f7f8;
-        }
+    .search-box input {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 12px 15px 12px 40px;
+        width: 280px;
+        font-size: 14px;
+        transition: 0.3s;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    }
 
-        tbody tr:hover {
-            background: #e6f0f4;
-        }
+    .search-box input:focus {
+        outline: none;
+        border-color: #2563eb;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    }
 
-        .badge {
-            display: inline-block;
-            min-width: 90px;
-            padding: 6px 0;
-            border-radius: 20px;
-            color: white;
-            font-size: 12px;
-            font-weight: 500;
-        }
+    .search-box span {
+        position: absolute;
+        left: 12px;
+        top: 11px;
+        font-size: 16px;
+        color: #64748b;
+    }
 
-        .low { background: #2e7d32; }
-        .moderate { background: #ef6c00; }
-        .high { background: #c62828; }
+    .filter-box select {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 12px 15px;
+        font-size: 14px;
+        transition: 0.3s;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    }
 
-        .action-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-        }
+    .filter-box select:focus {
+        outline: none;
+        border-color: #2563eb;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+    }
 
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            min-width: 110px;
-            padding: 7px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 500;
-            text-decoration: none;
-            transition: 0.3s;
-        }
+    table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 12px;
+    }
 
-        .btn-delete {
-            background: #dc2626;
-            color: white;
-        }
+    thead tr {
+        background: linear-gradient(135deg, #2c5364, #203a43);
+        color: white;
+    }
 
-        .btn-delete:hover {
-            background: #991b1b;
-        }
+    th {
+        padding: 16px;
+        font-weight: 500;
+    }
 
-        .btn-download {
-            background: #2563eb;
-            color: white;
-        }
+    tbody tr {
+        background: #ffffff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        transition: 0.2s ease;
+        cursor: pointer;
+    }
 
-        .btn-download:hover {
-            background: #1e40af;
-        }
+    tbody tr:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    }
 
-        .back-btn {
-            margin-top: 25px;
-            display: inline-block;
-            text-decoration: none;
-            background: #2c5364;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 6px;
-            transition: 0.3s;
-        }
+    td {
+        padding: 16px;
+        text-align: center;
+        font-size: 14px;
+    }
 
-        .back-btn:hover {
-            background: #203a43;
-        }
+    .badge {
+        min-width: 90px;
+        padding: 6px 0;
+        border-radius: 20px;
+        color: white;
+        font-size: 12px;
+        font-weight: 500;
+        display: inline-block;
+    }
 
-        .empty-state {
-            margin-top: 40px;
-            text-align: center;
-            color: #777;
-        }
+    .low { background: linear-gradient(135deg,#2e7d32,#1b5e20); }
+    .moderate { background: linear-gradient(135deg,#ef6c00,#e65100); }
+    .high { background: linear-gradient(135deg,#c62828,#8e0000); }
 
-    </style>
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .btn {
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 500;
+        text-decoration: none;
+        color: white;
+        transition: 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-delete {
+        background: linear-gradient(135deg,#ef4444,#dc2626);
+    }
+
+    .btn-delete:hover {
+        background: linear-gradient(135deg,#dc2626,#991b1b);
+        transform: translateY(-1px);
+    }
+
+    .btn-download {
+        background: linear-gradient(135deg,#3b82f6,#2563eb);
+    }
+
+    .btn-download:hover {
+        background: linear-gradient(135deg,#2563eb,#1e40af);
+        transform: translateY(-1px);
+    }
+
+    .back-btn {
+        margin-top: 35px;
+        display: inline-block;
+        text-decoration: none;
+        background: linear-gradient(135deg,#2c5364,#203a43);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        transition: 0.3s;
+    }
+
+    .back-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+
+    .no-result {
+        text-align: center;
+        padding: 25px;
+        font-weight: 500;
+        color: #64748b;
+        display: none;
+    }
+
+</style>
 </head>
 
 <body>
@@ -115,13 +183,31 @@
     <h1 style="color:#2c5364;">📁 Patient History Records</h1>
 
     {% if records|length == 0 %}
-        <div class="empty-state">
-            <p>No patient records available.</p>
-            <p>Start by creating a new assessment.</p>
-        </div>
+        <p style="margin-top:40px;">No patient records available.</p>
     {% else %}
 
-    <table>
+    <div class="top-controls">
+
+        <div class="search-box">
+            <span>🔍</span>
+            <input type="text" id="searchInput"
+                   placeholder="Search by Name or Patient ID">
+        </div>
+
+        <div class="filter-box">
+            🎯
+            <select id="riskFilter">
+                <option value="ALL">All Risk Levels</option>
+                <option value="LOW">Low</option>
+                <option value="MODERATE">Moderate</option>
+                <option value="HIGH">High</option>
+            </select>
+        </div>
+
+    </div>
+
+    <table id="historyTable">
+
         <thead>
             <tr>
                 <th>Patient ID</th>
@@ -135,9 +221,13 @@
         </thead>
 
         <tbody>
-            {% for record in records|reverse %}
-            <tr onclick="window.location='{{ url_for('patient_detail', patient_id=record['Patient ID']) }}'"
-                style="cursor:pointer;">
+
+        {% for record in records|reverse %}
+            <tr
+                onclick="window.location='{{ url_for('patient_detail', patient_id=record['Patient ID']) }}'"
+                data-name="{{ record['Patient Name']|lower }}"
+                data-id="{{ record['Patient ID']|lower }}"
+                data-risk="{{ record['Risk Level'] }}">
 
                 <td>{{ record["Patient ID"] }}</td>
                 <td>{{ record["Patient Name"] }}</td>
@@ -152,32 +242,33 @@
                         <span class="badge moderate">MODERATE</span>
                     {% elif record["Risk Level"] == "HIGH" %}
                         <span class="badge high">HIGH</span>
-                    {% else %}
-                        -
                     {% endif %}
                 </td>
 
-                <td onclick="event.stopPropagation();">
+                <td>
                     <div class="action-buttons">
-
                         <a href="{{ url_for('delete_record', patient_id=record['Patient ID']) }}"
                            class="btn btn-delete"
-                           onclick="return confirm('Are you sure you want to delete this record?');">
-                            🗑 Delete
+                           onclick="event.stopPropagation(); return confirm('Delete this record?');">
+                           🗑 Delete
                         </a>
 
                         <a href="{{ url_for('download_report', patient_id=record['Patient ID']) }}"
-                           class="btn btn-download">
-                            📄 Download
+                           class="btn btn-download"
+                           onclick="event.stopPropagation();">
+                           📄 Download
                         </a>
-
                     </div>
                 </td>
-
             </tr>
-            {% endfor %}
+        {% endfor %}
+
         </tbody>
     </table>
+
+    <div id="noResult" class="no-result">
+        No matching records found.
+    </div>
 
     {% endif %}
 
@@ -185,9 +276,47 @@
 
 </div>
 
-<div class="footer">
-    © 2026 Heart Disease Clinical AI System | Developed by Mohammed Raza
-</div>
+<script>
+const searchInput = document.getElementById("searchInput");
+const riskFilter = document.getElementById("riskFilter");
+const rows = document.querySelectorAll("#historyTable tbody tr");
+const noResult = document.getElementById("noResult");
+
+function filterTable() {
+
+    const searchValue = searchInput.value.toLowerCase();
+    const selectedRisk = riskFilter.value;
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+
+        const name = row.dataset.name;
+        const id = row.dataset.id;
+        const risk = row.dataset.risk;
+
+        const matchSearch =
+            name.includes(searchValue) ||
+            id.includes(searchValue);
+
+        const matchRisk =
+            selectedRisk === "ALL" ||
+            risk === selectedRisk;
+
+        if (matchSearch && matchRisk) {
+            row.style.display = "";
+            visibleCount++;
+        } else {
+            row.style.display = "none";
+        }
+
+    });
+
+    noResult.style.display = visibleCount === 0 ? "block" : "none";
+}
+
+searchInput.addEventListener("keyup", filterTable);
+riskFilter.addEventListener("change", filterTable);
+</script>
 
 </body>
 </html>
