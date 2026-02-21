@@ -12,7 +12,15 @@ import sqlite3
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 from auth import init_db
-
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+from reportlab.platypus import Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+from flask import send_file
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
@@ -420,6 +428,59 @@ def patient_detail(patient_id):
     patient["Probability (%)"] = round(safe_float(patient.get("Probability (%)")), 2)
 
     return render_template("patient_detail.html", patient=patient)
+
+
+@app.route("/download_report/<patient_id>")
+def download_report(patient_id):
+
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    record_file = "records/patient_records.csv"
+
+    if not os.path.exists(record_file):
+        return redirect(url_for("history"))
+
+    df = pd.read_csv(record_file)
+    patient_row = df[df["Patient ID"] == patient_id]
+
+    if patient_row.empty:
+        return redirect(url_for("history"))
+
+    patient = patient_row.iloc[0]
+
+    file_path = f"records/{patient_id}_report.pdf"
+    doc = SimpleDocTemplate(file_path)
+    elements = []
+
+    styles = getSampleStyleSheet()
+
+    elements.append(Paragraph("<b>Heart Disease Clinical AI Report</b>", styles['Title']))
+    elements.append(Spacer(1, 0.3 * inch))
+
+    data = [
+        ["Patient ID", patient["Patient ID"]],
+        ["Patient Name", patient["Patient Name"]],
+        ["Prediction", patient["Prediction"]],
+        ["Probability (%)", str(patient["Probability (%)"]) + "%"],
+        ["Risk Level", patient["Risk Level"]],
+        ["Assessment Time", patient["Timestamp"]],
+        ["Model", "GA Optimized SVM"],
+        ["Accuracy", "87%+"]
+    ]
+
+    table = Table(data, colWidths=[2.5*inch, 3*inch])
+    table.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+        ('FONTSIZE', (0,0), (-1,-1), 10),
+        ('ROWHEIGHT', (0,0), (-1,-1), 20)
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+
+    return send_file(file_path, as_attachment=True)
 
 # ------------------------------------------------------------
 # Delete

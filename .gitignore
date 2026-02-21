@@ -7,6 +7,7 @@ __pycache__/
 
 # Model files
 models/*.pkl
+records/*.pdf
 
 # Records
 records/*.csv
