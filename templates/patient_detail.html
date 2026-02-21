@@ -41,7 +41,7 @@
 
         .right-panel {
             width: 320px;
-            text-align: center;
+            height: 320px;
         }
 
         .badge {
@@ -71,7 +71,7 @@
 
         .feature-card {
             background: #f4f6f8;
-            padding: 12px;
+            padding: 15px;
             border-radius: 8px;
             text-align: center;
             transition: 0.2s ease;
@@ -91,8 +91,12 @@
         .feature-card p {
             font-size: 16px;
             font-weight: 600;
-            margin: 6px 0 0;
+            margin: 6px 0 4px;
         }
+
+        .status-normal { color: green; font-size: 12px; }
+        .status-high { color: red; font-size: 12px; }
+        .status-low { color: orange; font-size: 12px; }
 
         .chart-section {
             margin-top: 35px;
@@ -156,22 +160,60 @@
                 {% endif %}
             </div>
 
+            <!-- Feature Cards with Status -->
             <div class="feature-grid">
-                <div class="feature-card"><h4>Age</h4><p>{{ patient['Age'] }}</p></div>
-                <div class="feature-card"><h4>Cholesterol</h4><p>{{ patient['Cholesterol'] }}</p></div>
-                <div class="feature-card"><h4>Resting BP</h4><p>{{ patient['Resting BP'] }}</p></div>
-                <div class="feature-card"><h4>Max Heart Rate</h4><p>{{ patient['Max Heart Rate'] }}</p></div>
-                <div class="feature-card"><h4>Chest Pain Type</h4><p>{{ patient['Chest Pain Type'] }}</p></div>
-                <div class="feature-card"><h4>ST Depression</h4><p>{{ patient['ST Depression'] }}</p></div>
+
+                <div class="feature-card">
+                    <h4>Cholesterol</h4>
+                    <p>{{ patient['Cholesterol'] }}</p>
+                    {% if patient['Cholesterol Status'] == "HIGH" %}
+                        <div class="status-high">High ↑</div>
+                    {% else %}
+                        <div class="status-normal">Normal ✓</div>
+                    {% endif %}
+                </div>
+
+                <div class="feature-card">
+                    <h4>Resting BP</h4>
+                    <p>{{ patient['Resting BP'] }}</p>
+                    {% if patient['Resting BP Status'] == "HIGH" %}
+                        <div class="status-high">High ↑</div>
+                    {% elif patient['Resting BP Status'] == "LOW" %}
+                        <div class="status-low">Low ↓</div>
+                    {% else %}
+                        <div class="status-normal">Normal ✓</div>
+                    {% endif %}
+                </div>
+
+                <div class="feature-card">
+                    <h4>Max Heart Rate</h4>
+                    <p>{{ patient['Max Heart Rate'] }}</p>
+                    {% if patient['Max Heart Rate Status'] == "HIGH" %}
+                        <div class="status-high">High ↑</div>
+                    {% elif patient['Max Heart Rate Status'] == "LOW" %}
+                        <div class="status-low">Low ↓</div>
+                    {% else %}
+                        <div class="status-normal">Normal ✓</div>
+                    {% endif %}
+                </div>
+
+                <div class="feature-card">
+                    <h4>ST Depression</h4>
+                    <p>{{ patient['ST Depression'] }}</p>
+                    {% if patient['ST Depression Status'] == "HIGH" %}
+                        <div class="status-high">High ↑</div>
+                    {% else %}
+                        <div class="status-normal">Normal ✓</div>
+                    {% endif %}
+                </div>
+
             </div>
 
-            <!-- Feature Bar Chart -->
+            <!-- Feature Chart -->
             <div class="chart-section">
                 <h3 style="color:#2c5364;">Clinical Parameter Overview</h3>
-                <div style="height:300px;">
-                    <div style="height:300px;">
-                        <canvas id="featureChart"></canvas>
-                    </div>
+                <div style="height:280px;">
+                    <canvas id="featureChart"></canvas>
                 </div>
             </div>
 
@@ -191,7 +233,6 @@
 <script>
     const probability = {{ patient["Probability (%)"] }};
 
-    /* DONUT CHART */
     const centerTextPlugin = {
         id: 'centerText',
         beforeDraw(chart) {
@@ -208,9 +249,7 @@
         }
     };
 
-    const riskCtx = document.getElementById('riskChart').getContext('2d');
-
-    new Chart(riskCtx, {
+    new Chart(document.getElementById('riskChart'), {
         type: 'doughnut',
         data: {
             datasets: [{
@@ -225,43 +264,32 @@
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
             cutout: '75%',
             plugins: { legend: { display: false } }
         },
         plugins: [centerTextPlugin]
     });
 
-    /* FEATURE BAR CHART */
-    const featureCtx = document.getElementById('featureChart').getContext('2d');
-
-    new Chart(featureCtx, {
+    new Chart(document.getElementById('featureChart'), {
         type: 'bar',
         data: {
-            labels: ['Age', 'Cholesterol', 'Resting BP', 'Max HR', 'ST Depression'],
+            labels: ['Cholesterol', 'Resting BP', 'Max HR', 'ST Depression'],
             datasets: [{
                 data: [
-                    {{ patient['Age'] }},
                     {{ patient['Cholesterol'] }},
                     {{ patient['Resting BP'] }},
                     {{ patient['Max Heart Rate'] }},
                     {{ patient['ST Depression'] }}
                 ],
                 backgroundColor: '#2c5364',
-                borderRadius: 6,
-                barThickness: 40
+                borderRadius: 6
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                x: { grid: { display: false } },
-                y: {
-                    beginAtZero: true,
-                    grid: { color: '#e0e0e0' }
-                }
+                y: { beginAtZero: true }
             }
         }
     });

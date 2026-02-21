@@ -30,7 +30,7 @@
             background: #e0e0e0;
             border-radius: 10px;
             overflow: hidden;
-            height: 20px;
+            height: 22px;
         }
 
         .progress-bar {
@@ -39,11 +39,19 @@
             padding-right: 10px;
             color: white;
             font-size: 12px;
-            line-height: 20px;
+            line-height: 22px;
+            font-weight: 500;
+        }
+
+        .recommendation-box {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f4f6f8;
         }
 
         .action-buttons {
-            margin-top: 25px;
+            margin-top: 30px;
         }
 
         .action-buttons a {
@@ -56,12 +64,21 @@
 
 <div class="container result-card">
 
-    <h1 style="color:#2c5364;">🫀 Clinical Assessment Result</h1>
+    <h1 style="color:#2c5364;">🫀 AI Clinical Assessment Result</h1>
 
     <div class="result-info">
+
         <p><strong>Patient Name:</strong> {{ patient_name }}</p>
         <p><strong>Patient ID:</strong> {{ patient_id }}</p>
-        <p><strong>Prediction:</strong> {{ prediction }}</p>
+
+        <p><strong>Diagnosis Prediction:</strong>
+            {% if prediction == "Present" %}
+                Cardiovascular Disease Detected
+            {% else %}
+                No Cardiovascular Disease Detected
+            {% endif %}
+        </p>
+
         <p><strong>Risk Level:</strong>
             {% if risk_level == "LOW" %}
                 <span class="badge" style="background:green;">LOW</span>
@@ -77,24 +94,47 @@
         <!-- Progress Bar -->
         <div class="progress-container">
             {% if risk_level == "LOW" %}
-    <div class="progress-bar"
-         style="width: {{ probability }}%; background: #2e7d32;">
-        {{ probability }}%
-    </div>
-
-{% elif risk_level == "MODERATE" %}
-    <div class="progress-bar"
-         style="width: {{ probability }}%; background: #ef6c00;">
-        {{ probability }}%
-    </div>
-
-{% else %}
-    <div class="progress-bar"
-         style="width: {{ probability }}%; background: #c62828;">
-        {{ probability }}%
-    </div>
-{% endif %}
+                <div class="progress-bar"
+                     style="width: {{ probability }}%; background: #2e7d32;">
+                    {{ probability }}%
+                </div>
+            {% elif risk_level == "MODERATE" %}
+                <div class="progress-bar"
+                     style="width: {{ probability }}%; background: #ef6c00;">
+                    {{ probability }}%
+                </div>
+            {% else %}
+                <div class="progress-bar"
+                     style="width: {{ probability }}%; background: #c62828;">
+                    {{ probability }}%
+                </div>
+            {% endif %}
         </div>
+
+        <!-- AI Recommendation -->
+        <div class="recommendation-box">
+            <h3 style="color:#2c5364;">AI Clinical Recommendation</h3>
+
+            {% if risk_level == "HIGH" %}
+                <p style="color:#c62828;">
+                    ⚠ High cardiovascular risk detected.
+                    Immediate cardiology consultation and further diagnostic testing recommended.
+                </p>
+
+            {% elif risk_level == "MODERATE" %}
+                <p style="color:#ef6c00;">
+                    ⚠ Moderate risk detected.
+                    Lifestyle modification, diet control, and regular monitoring advised.
+                </p>
+
+            {% else %}
+                <p style="color:#2e7d32;">
+                    ✓ Low immediate cardiovascular risk.
+                    Maintain healthy lifestyle and routine check-ups.
+                </p>
+            {% endif %}
+        </div>
+
     </div>
 
     <div class="action-buttons">

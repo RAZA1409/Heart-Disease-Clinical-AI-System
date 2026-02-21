@@ -1,70 +1,259 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Clinical Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
+    <title>Clinical AI Dashboard</title>
 
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+
+        .section-title {
+            margin-top: 50px;
+            margin-bottom: 20px;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .metric-box {
+            padding: 22px;
+            border-radius: 14px;
+            background: #ffffff;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .metric-box h3 {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .metric-box p {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 30px;
+            align-items: center;
+        }
+
+        .chart-box {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+        }
+
+        .progress-bar-container {
+            margin-bottom: 15px;
+        }
+
+        .progress-label {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            border-radius: 10px;
+            background: #e5e7eb;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 1s ease-in-out;
+        }
+
+        .trend-section {
+            margin-top: 50px;
+        }
+
+        canvas {
+            max-height: 350px;
+        }
+
+    </style>
+</head>
+
+<body>
 <div class="container">
 
-    <!-- Dashboard Header -->
     <div class="dashboard-header">
-        <h1>Clinical Dashboard</h1>
-
+        <h1>🫀 Clinical AI Dashboard</h1>
         <div class="top-actions">
-            <a href="{{ url_for('history') }}" class="action-btn">
-                📁 History
-            </a>
-
-            <a href="{{ url_for('change_password') }}" class="password-btn">
-                🔐 Change Password
-            </a>
-
-            <a href="{{ url_for('logout') }}" class="logout-btn">
-                🚪 Logout
-            </a>
+            <a href="{{ url_for('history') }}" class="action-btn">History</a>
+            <a href="{{ url_for('change_password') }}" class="password-btn">Change Password</a>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
         </div>
     </div>
 
-    <!-- Start Assessment Button -->
-    <div style="text-align:center; margin: 30px 0;">
-        <a href="{{ url_for('home') }}" class="button-primary">
-            ➕ Start New Assessment
-        </a>
-    </div>
-
-    <!-- Stats Cards -->
+    <!-- KPI Cards -->
     <div class="dashboard-grid">
+        <div class="card total"><h2>Total</h2><p>{{ total }}</p></div>
+        <div class="card low"><h2>Low</h2><p>{{ low }}</p></div>
+        <div class="card moderate"><h2>Moderate</h2><p>{{ moderate }}</p></div>
+        <div class="card high"><h2>High</h2><p>{{ high }}</p></div>
+    </div>
 
-        <div class="card total">
-            <h2>Total Patients</h2>
-            <p>{{ total }}</p>
+    <!-- Smart Metrics -->
+    <div class="metrics-grid">
+        <div class="metric-box">
+            <h3>Average Risk Probability</h3>
+            <p>{{ avg_probability }}%</p>
         </div>
 
-        <div class="card low">
-            <h2>Low Risk</h2>
-            <p>{{ low }}</p>
+        <div class="metric-box">
+            <h3>Highest Risk Patient</h3>
+            <p>{{ top_patient }}</p>
         </div>
 
-        <div class="card moderate">
-            <h2>Moderate Risk</h2>
-            <p>{{ moderate }}</p>
+        <div class="metric-box">
+            <h3>Last Assessment</h3>
+            <p>{{ last_timestamp }}</p>
         </div>
 
-        <div class="card high">
-            <h2>High Risk</h2>
-            <p>{{ high }}</p>
+        <div class="metric-box">
+            <h3>System Status</h3>
+            <p>
+                {% if high > low %}
+                    ⚠ Critical
+                {% else %}
+                    ✅ Stable
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Risk Distribution + Summary -->
+    <div class="analytics-grid">
+
+        <div class="chart-box">
+            <div class="section-title">Risk Distribution</div>
+            <canvas id="riskChart"></canvas>
         </div>
 
+        <div class="chart-box">
+            <div class="section-title">System Summary</div>
+
+            <div class="progress-bar-container">
+                <div class="progress-label">Low Risk ({{ low }})</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (low/total*100) if total>0 else 0 }}%; background:#2e7d32;"></div>
+                </div>
+            </div>
+
+            <div class="progress-bar-container">
+                <div class="progress-label">Moderate Risk ({{ moderate }})</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (moderate/total*100) if total>0 else 0 }}%; background:#ef6c00;"></div>
+                </div>
+            </div>
+
+            <div class="progress-bar-container">
+                <div class="progress-label">High Risk ({{ high }})</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ (high/total*100) if total>0 else 0 }}%; background:#c62828;"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Trend -->
+    <div class="trend-section">
+        <div class="section-title">📈 Risk Trend (Recent Assessments)</div>
+        <div class="chart-box">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Model Performance -->
+    <div class="trend-section">
+        <div class="section-title">🧠 Model Performance</div>
+
+        <div class="metrics-grid">
+            <div class="metric-box">
+                <h3>Model Type</h3>
+                <p>GA Optimized SVM</p>
+            </div>
+
+            <div class="metric-box">
+                <h3>Optimization</h3>
+                <p>Genetic Algorithm</p>
+            </div>
+
+            <div class="metric-box">
+                <h3>Accuracy</h3>
+                <p>87%+</p>
+            </div>
+
+            <div class="metric-box">
+                <h3>Version</h3>
+                <p>v2.1</p>
+            </div>
+        </div>
     </div>
 
 </div>
 
-<div class="footer">
-    © 2026 Heart Disease Clinical AI System | Developed by Mohammed Raza
-</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+new Chart(document.getElementById('riskChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Low', 'Moderate', 'High'],
+        datasets: [{
+            data: [{{ low }}, {{ moderate }}, {{ high }}],
+            backgroundColor: ['#2e7d32', '#ef6c00', '#c62828'],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        cutout: '65%',
+        plugins: {
+            legend: { position: 'bottom' }
+        }
+    }
+});
+
+new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+        labels: {{ trend_labels|tojson }},
+        datasets: [{
+            label: 'Risk Probability (%)',
+            data: {{ trend_values|tojson }},
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37,99,235,0.15)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true, max: 100 }
+        }
+    }
+});
+</script>
 
 </body>
 </html>

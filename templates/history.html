@@ -24,12 +24,17 @@
             font-size: 14px;
         }
 
+        tbody tr {
+            transition: 0.2s ease;
+        }
+
         tbody tr:nth-child(even) {
             background: #f5f5f5;
         }
 
         tbody tr:hover {
-            background: #e9f2f5;
+            background: #e3edf1;
+            transform: scale(1.01);
         }
 
         .badge {
@@ -43,12 +48,12 @@
             font-weight: 500;
         }
 
-        .low { background: green; }
-        .moderate { background: orange; }
-        .high { background: red; }
+        .low { background: #2e7d32; }
+        .moderate { background: #ef6c00; }
+        .high { background: #c62828; }
 
         .back-btn {
-            margin-top: 20px;
+            margin-top: 25px;
             display: inline-block;
             text-decoration: none;
             background: #2c5364;
@@ -65,6 +70,12 @@
         .table-container {
             overflow-x: auto;
         }
+
+        .empty-state {
+            margin-top: 40px;
+            text-align: center;
+            color: #777;
+        }
     </style>
 </head>
 
@@ -74,10 +85,16 @@
 
     <h1 style="color:#2c5364;">📁 Patient History Records</h1>
 
+    {% if records|length == 0 %}
+        <div class="empty-state">
+            <p>No patient records available.</p>
+            <p>Start by creating a new assessment.</p>
+        </div>
+    {% else %}
+
     <div class="table-container">
         <table>
 
-            <!-- HEADER ROW (DO NOT TOUCH) -->
             <thead>
                 <tr>
                     <th>Patient ID</th>
@@ -91,9 +108,9 @@
             </thead>
 
             <tbody>
-                {% for record in records %}
 
-                <!-- CLICKABLE DATA ROW -->
+                {% for record in records|reverse %}
+
                 <tr onclick="window.location='{{ url_for('patient_detail', patient_id=record['Patient ID']) }}'"
                     style="cursor:pointer;">
 
@@ -101,7 +118,7 @@
                     <td>{{ record["Patient Name"] }}</td>
                     <td>{{ record["Timestamp"] }}</td>
                     <td>{{ record["Prediction"] }}</td>
-                    <td>{{ record["Probability (%)"] }}</td>
+                    <td>{{ record["Probability (%)"] }}%</td>
 
                     <td>
                         {% if record["Risk Level"] == "LOW" %}
@@ -142,6 +159,8 @@
 
         </table>
     </div>
+
+    {% endif %}
 
     <a href="{{ url_for('dashboard') }}" class="back-btn">← Back to Dashboard</a>
 
