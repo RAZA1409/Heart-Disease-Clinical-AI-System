@@ -122,12 +122,15 @@ def home():
 # Login
 # ------------------------------------------------------------
 
+from flask import make_response
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
 
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
+        remember = request.form.get("remember")
 
         conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
@@ -137,11 +140,21 @@ def login():
 
         if result and check_password_hash(result[0], password):
             session["user"] = username
-            return redirect(url_for("dashboard"))
+
+            response = make_response(redirect(url_for("dashboard")))
+
+            if remember:
+                response.set_cookie("remember_user", username, max_age=60*60*24*30)  # 30 days
+            else:
+                response.set_cookie("remember_user", "", expires=0)
+
+            return response
+
         else:
             return render_template("login.html", error="Invalid Credentials")
 
-    return render_template("login.html")
+    remembered_user = request.cookies.get("remember_user")
+    return render_template("login.html", remembered_user=remembered_user)
 
 # ------------------------------------------------------------
 # Logout
@@ -197,6 +210,43 @@ def change_password():
 
     return render_template("change_password.html")
 
+
+@app.route("/forgot_password", methods=["GET", "POST"])
+def forgot_password():
+
+    if request.method == "POST":
+        username = request.form["username"]
+        new_password = request.form["new_password"]
+
+        if len(new_password) < 8:
+            return render_template("forgot_password.html",
+                                   error="Password must be at least 8 characters long")
+
+        conn = sqlite3.connect("database.db")
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+        user = cursor.fetchone()
+
+        if not user:
+            conn.close()
+            return render_template("forgot_password.html",
+                                   error="Username not found")
+
+        hashed_password = generate_password_hash(new_password)
+
+        cursor.execute("UPDATE users SET password = ? WHERE username = ?",
+                       (hashed_password, username))
+
+        conn.commit()
+        conn.close()
+
+        return render_template("forgot_password.html",
+                               success="Password reset successful. You can now login.")
+
+    return render_template("forgot_password.html")
+
+
 # ------------------------------------------------------------
 # Dashboard
 # ------------------------------------------------------------
@@ -249,6 +299,15 @@ def dashboard():
     moderate_percent = round((moderate / total) * 100, 1) if total else 0
     high_percent = round((high / total) * 100, 1) if total else 0
 
+    # -----------------------------
+# System Status Logic
+# -----------------------------
+    if high_percent >= 50:
+        system_status = "Critical"
+    elif moderate_percent >= 40:
+        system_status = "Warning"
+    else:
+        system_status = "Stable"
     # AI Insight Generator
     if high_percent >= 50:
         insight = "⚠ Majority of patients fall under High Risk. Immediate clinical attention advised."
@@ -273,7 +332,8 @@ def dashboard():
                        top_patient=top_patient,
                        last_timestamp=last_timestamp,
                        trend_labels=trend_labels,
-                       trend_values=trend_values)
+                       trend_values=trend_values,
+                       system_status=system_status)
 
 # ------------------------------------------------------------
 # Prediction
