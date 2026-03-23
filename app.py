@@ -17,6 +17,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 from reportlab.platypus import Table, TableStyle
+from database import get_db_connection
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
@@ -250,91 +251,67 @@ def forgot_password():
 # ------------------------------------------------------------
 # Dashboard
 # ------------------------------------------------------------
-
 @app.route("/dashboard")
 def dashboard():
 
     if "user" not in session:
         return redirect(url_for("login"))
 
-    record_file = "records/patient_records.csv"
+    conn = get_db_connection()
+    patients = conn.execute("SELECT * FROM patients").fetchall()
+    conn.close()
 
-    if not os.path.exists(record_file):
-        return render_template("dashboard.html",
-                               total=0, low=0, moderate=0, high=0,
-                               low_percent=0, moderate_percent=0, high_percent=0,
-                               insight="No patient data available.",
-                               recent=[])
+    total = len(patients)
 
-    df = pd.read_csv(record_file)
-    # Risk trend data (last 10 records)
-    trend_df = df.tail(10)
-    trend_labels = trend_df["Timestamp"].tolist()
-    trend_values = trend_df["Probability (%)"].tolist()
-
-    # Convert to JSON-safe format
-    trend_labels = [str(x) for x in trend_labels]
-    trend_values = [float(x) for x in trend_values]
-    # Recent 5 records
-    recent = df.tail(5).iloc[::-1].to_dict(orient="records")
-
-    # Average Probability
-    avg_probability = round(df["Probability (%)"].mean(), 2) if not df.empty else 0
-
-    # Highest Risk Patient
-    high_risk_patients = df[df["Risk Level"] == "HIGH"]
-    if not high_risk_patients.empty:
-        top_patient = high_risk_patients.iloc[-1]["Patient Name"]
-    else:
-        top_patient = "None"
-
-# Last Assessment Time
-    last_timestamp = df.iloc[-1]["Timestamp"] if not df.empty else "N/A"
-    total = len(df)
-    low = len(df[df["Risk Level"] == "LOW"])
-    moderate = len(df[df["Risk Level"] == "MODERATE"])
-    high = len(df[df["Risk Level"] == "HIGH"])
+    low = len([p for p in patients if p["risk_level"] == "LOW"])
+    moderate = len([p for p in patients if p["risk_level"] == "MODERATE"])
+    high = len([p for p in patients if p["risk_level"] == "HIGH"])
 
     low_percent = round((low / total) * 100, 1) if total else 0
     moderate_percent = round((moderate / total) * 100, 1) if total else 0
     high_percent = round((high / total) * 100, 1) if total else 0
 
-    # -----------------------------
-# System Status Logic
-# -----------------------------
+    recent = patients[::-1][:5] if patients else []
+
+    avg_probability = round(
+        sum([p["probability"] for p in patients]) / total, 2
+    ) if total else 0
+
+    # 🔥 Highest Risk Patient
+    high_patients = [p for p in patients if p["risk_level"] == "HIGH"]
+    top_patient = high_patients[-1]["patient_name"] if high_patients else "None"
+
+    last_timestamp = patients[-1]["timestamp"] if patients else "N/A"
+
+    # 🔥 Trend Graph
+    trend_data = patients[-10:]
+    trend_labels = [p["timestamp"] for p in trend_data]
+    trend_values = [p["probability"] for p in trend_data]
+
+    # System Status
     if high_percent >= 50:
         system_status = "Critical"
     elif moderate_percent >= 40:
         system_status = "Warning"
     else:
         system_status = "Stable"
-    # AI Insight Generator
-    if high_percent >= 50:
-        insight = "⚠ Majority of patients fall under High Risk. Immediate clinical attention advised."
-    elif moderate_percent >= 40:
-        insight = "⚠ Significant moderate risk detected. Monitoring recommended."
-    else:
-        insight = "✓ Majority patients fall under Low Risk category."
-
-    # Last 3 patients
-    recent = df.tail(3).iloc[::-1].to_dict(orient="records")
 
     return render_template("dashboard.html",
-                       total=total,
-                       low=low,
-                       moderate=moderate,
-                       high=high,
-                       low_percent=low_percent,
-                       moderate_percent=moderate_percent,
-                       high_percent=high_percent,
-                       recent=recent,
-                       avg_probability=avg_probability,
-                       top_patient=top_patient,
-                       last_timestamp=last_timestamp,
-                       trend_labels=trend_labels,
-                       trend_values=trend_values,
-                       system_status=system_status)
-
+        total=total,
+        low=low,
+        moderate=moderate,
+        high=high,
+        low_percent=low_percent,
+        moderate_percent=moderate_percent,
+        high_percent=high_percent,
+        recent=recent,
+        avg_probability=avg_probability,
+        top_patient=top_patient,
+        last_timestamp=last_timestamp,
+        trend_labels=trend_labels,
+        trend_values=trend_values,
+        system_status=system_status
+    )
 # ------------------------------------------------------------
 # Prediction
 # ------------------------------------------------------------
@@ -393,32 +370,26 @@ def predict():
 
     patient_id = "PID" + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
-    if not os.path.exists("records"):
-        os.makedirs("records")
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-    record_file = "records/patient_records.csv"
+    cursor.execute('''
+    INSERT INTO patients (
+        patient_id, patient_name, age, sex, cp, trestbps, chol, fbs,
+        restecg, thalach, exang, oldpeak, slope, ca, thal,
+        result, probability, risk_level
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        patient_id, patient_name, age, sex, cp, trestbps, chol, fbs,
+        restecg, thalach, exang, oldpeak, slope, ca, thal,
+        "Present" if prediction == 1 else "Absent",
+        round(probability * 100, 2),
+        risk_level
+    ))
 
-    patient_record = {
-        "Patient ID": patient_id,
-        "Patient Name": patient_name,
-        "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "Age": age,
-        "Resting BP": trestbps,
-        "Cholesterol": chol,
-        "Max Heart Rate": thalach,
-        "ST Depression": oldpeak,
-        "Chest Pain Type": cp,
-        "Prediction": "Present" if prediction == 1 else "Absent",
-        "Probability (%)": round(probability * 100, 2),
-        "Risk Level": risk_level
-    }
+    conn.commit()
+    conn.close()
 
-    record_df = pd.DataFrame([patient_record])
-
-    if os.path.exists(record_file):
-        record_df.to_csv(record_file, mode="a", header=False, index=False)
-    else:
-        record_df.to_csv(record_file, index=False)
 
     return render_template("result.html",
                            patient_name=patient_name,
@@ -437,18 +408,18 @@ def history():
     if "user" not in session:
         return redirect(url_for("login"))
 
-    record_file = "records/patient_records.csv"
+    conn = get_db_connection()
+    patients = conn.execute(
+        "SELECT * FROM patients ORDER BY timestamp DESC"
+    ).fetchall()
+    conn.close()
 
-    if os.path.exists(record_file):
-        df = pd.read_csv(record_file)
-        records = df.to_dict(orient="records")
-    else:
-        records = []
+    return render_template("history.html", patients=patients)
 
-    return render_template("history.html", records=records)
+
 
 # ------------------------------------------------------------
-# Patient Detail
+# Patient Detail Page (FIXED)
 # ------------------------------------------------------------
 
 @app.route("/patient/<patient_id>")
@@ -457,38 +428,67 @@ def patient_detail(patient_id):
     if "user" not in session:
         return redirect(url_for("login"))
 
-    record_file = "records/patient_records.csv"
+    conn = get_db_connection()
+    patient_row = conn.execute(
+        "SELECT * FROM patients WHERE patient_id = ?",
+        (patient_id,)
+    ).fetchone()
+    conn.close()
 
-    if not os.path.exists(record_file):
+    if not patient_row:
         return redirect(url_for("history"))
 
-    df = pd.read_csv(record_file)
-    patient_row = df[df["Patient ID"] == patient_id]
+    patient = dict(patient_row)
 
-    if patient_row.empty:
-        return redirect(url_for("history"))
+    # ----------------------------
+    # Utility functions
+    # ----------------------------
+    def safe_float(val):
+        try:
+            return float(val)
+        except:
+            return 0
 
-    patient = patient_row.iloc[0].to_dict()
+    def check_range(value, min_val=None, max_val=None):
+        value = safe_float(value)
+        if min_val is not None and value < min_val:
+            return "Low"
+        if max_val is not None and value > max_val:
+            return "High"
+        return "Normal"
 
-    # Numeric → Text
+    # ----------------------------
+    # Clinical Analysis
+    # ----------------------------
+    patient["Cholesterol Status"] = check_range(patient.get("chol"), max_val=200)
+    patient["Resting BP Status"] = check_range(patient.get("trestbps"), min_val=90, max_val=120)
+    patient["Max Heart Rate Status"] = check_range(patient.get("thalach"), min_val=60, max_val=100)
+    patient["ST Depression Status"] = check_range(patient.get("oldpeak"), max_val=1)
+
+    patient["Probability (%)"] = round(safe_float(patient.get("probability")), 2)
+
+    # ----------------------------
+    # Reverse Mapping (Text)
+    # ----------------------------
     try:
-        patient["Chest Pain Type"] = REVERSE_FEATURE_MAP["cp"].get(
-            patient.get("Chest Pain Type"),
-            patient.get("Chest Pain Type")
+        patient["cp_text"] = REVERSE_FEATURE_MAP["cp"].get(
+            patient.get("cp"),
+            patient.get("cp")
         )
     except:
-        pass
-
-    # Clinical Ranges
-    patient["Cholesterol Status"] = check_range(patient.get("Cholesterol"), max_val=200)
-    patient["Resting BP Status"] = check_range(patient.get("Resting BP"), min_val=90, max_val=120)
-    patient["Max Heart Rate Status"] = check_range(patient.get("Max Heart Rate"), min_val=60, max_val=100)
-    patient["ST Depression Status"] = check_range(patient.get("ST Depression"), max_val=1)
-
-    patient["Probability (%)"] = round(safe_float(patient.get("Probability (%)")), 2)
+        patient["cp_text"] = patient.get("cp")
 
     return render_template("patient_detail.html", patient=patient)
+    
 
+# ------------------------------------------------------------
+# Patient Detail
+# ------------------------------------------------------------
+
+from io import BytesIO
+from reportlab.platypus import SimpleDocTemplate, Table
+from reportlab.lib import colors
+from flask import send_file
 
 @app.route("/download_report/<patient_id>")
 def download_report(patient_id):
@@ -496,52 +496,47 @@ def download_report(patient_id):
     if "user" not in session:
         return redirect(url_for("login"))
 
-    record_file = "records/patient_records.csv"
+    from database import get_db_connection
 
-    if not os.path.exists(record_file):
+    conn = get_db_connection()
+    patient = conn.execute(
+        "SELECT * FROM patients WHERE patient_id = ?",
+        (patient_id,)
+    ).fetchone()
+    conn.close()
+
+    if not patient:
         return redirect(url_for("history"))
 
-    df = pd.read_csv(record_file)
-    patient_row = df[df["Patient ID"] == patient_id]
-
-    if patient_row.empty:
-        return redirect(url_for("history"))
-
-    patient = patient_row.iloc[0]
-
-    file_path = f"records/{patient_id}_report.pdf"
-    doc = SimpleDocTemplate(file_path)
-    elements = []
-
-    styles = getSampleStyleSheet()
-
-    elements.append(Paragraph("<b>Heart Disease Clinical AI Report</b>", styles['Title']))
-    elements.append(Spacer(1, 0.3 * inch))
+    buffer = BytesIO()
+    pdf = SimpleDocTemplate(buffer)
 
     data = [
-        ["Patient ID", patient["Patient ID"]],
-        ["Patient Name", patient["Patient Name"]],
-        ["Prediction", patient["Prediction"]],
-        ["Probability (%)", str(patient["Probability (%)"]) + "%"],
-        ["Risk Level", patient["Risk Level"]],
-        ["Assessment Time", patient["Timestamp"]],
-        ["Model", "GA Optimized SVM"],
-        ["Accuracy", "87%+"]
+        ["Field", "Value"],
+        ["Patient ID", patient["patient_id"]],
+        ["Patient Name", patient["patient_name"]],
+        ["Age", str(patient["age"])],
+        ["Prediction", patient["result"]],
+        ["Risk Level", patient["risk_level"]],
+        ["Probability (%)", str(patient["probability"])],
+        ["Timestamp", patient["timestamp"]],
     ]
 
-    table = Table(data, colWidths=[2.5*inch, 3*inch])
-    table.setStyle(TableStyle([
-        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-        ('FONTSIZE', (0,0), (-1,-1), 10),
-        ('ROWHEIGHT', (0,0), (-1,-1), 20)
-    ]))
+    table = Table(data)
+    table.setStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+    ])
 
-    elements.append(table)
-    doc.build(elements)
+    pdf.build([table])
+    buffer.seek(0)
 
-    return send_file(file_path, as_attachment=True)
-
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"{patient_id}_report.pdf",
+        mimetype='application/pdf'
+    )
 # ------------------------------------------------------------
 # Delete
 # ------------------------------------------------------------
@@ -552,13 +547,10 @@ def delete_record(patient_id):
     if "user" not in session:
         return redirect(url_for("login"))
 
-    record_file = "records/patient_records.csv"
-
-    if os.path.exists(record_file):
-        df = pd.read_csv(record_file)
-        df = df[df["Patient ID"] != patient_id]
-        df.to_csv(record_file, index=False)
-
+    conn = get_db_connection()
+    conn.execute("DELETE FROM patients WHERE patient_id = ?", (patient_id,))
+    conn.commit()
+    conn.close()
     return redirect(url_for("history"))
 
 # ------------------------------------------------------------

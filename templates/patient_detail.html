@@ -248,16 +248,19 @@ body{
         <h2>🧾 Patient Clinical Analytics</h2>
 
         <div class="actions">
-            <a href="{{ url_for('download_report', patient_id=patient['Patient ID']) }}"
+
+            <!-- ✅ FIXED PDF -->
+            <a href="{{ url_for('download_report', patient_id=patient['patient_id']) }}"
                class="btn btn-download">📄 Download PDF</a>
 
             <button onclick="window.print()" class="btn btn-print">
                 🖨 Print Report
             </button>
 
-            {% if patient["Risk Level"] == "LOW" %}
+            <!-- ✅ FIXED RISK -->
+            {% if patient["risk_level"] == "LOW" %}
                 <span class="badge low">LOW RISK</span>
-            {% elif patient["Risk Level"] == "MODERATE" %}
+            {% elif patient["risk_level"] == "MODERATE" %}
                 <span class="badge moderate">MODERATE RISK</span>
             {% else %}
                 <span class="badge high">HIGH RISK</span>
@@ -266,49 +269,55 @@ body{
 
     </div>
 
+    <!-- ✅ FIXED NAME + PROBABILITY -->
     <div class="hero">
-        <div class="patient-name">{{ patient['Patient Name'] }}</div>
-        <div class="probability">{{ patient['Probability (%)'] }}%</div>
+        <div class="patient-name">{{ patient['patient_name'] }}</div>
+        <div class="probability">{{ patient['probability'] }}%</div>
     </div>
 
     <div class="main-layout">
 
-        <!-- LEFT SIDE -->
+        <!-- LEFT -->
         <div class="left">
 
             <div class="recommendation">
                 <h4>🧠 AI Clinical Recommendation</h4>
-                {% if patient["Risk Level"] == "HIGH" %}
+
+                {% if patient["risk_level"] == "HIGH" %}
                     <p style="color:#dc2626;">Immediate cardiology consultation recommended.</p>
-                {% elif patient["Risk Level"] == "MODERATE" %}
+                {% elif patient["risk_level"] == "MODERATE" %}
                     <p style="color:#d97706;">Lifestyle modification & monitoring advised.</p>
                 {% else %}
                     <p style="color:#16a34a;">Low immediate risk. Maintain healthy lifestyle.</p>
                 {% endif %}
             </div>
 
+            <!-- ✅ FIXED VALUES -->
             <div class="feature-grid">
+
                 <div class="card normal">
                     <h4>Cholesterol</h4>
-                    <p>{{ patient['Cholesterol'] }}</p>
+                    <p>{{ patient['chol'] }}</p>
                 </div>
 
                 <div class="card normal">
                     <h4>Resting BP</h4>
-                    <p>{{ patient['Resting BP'] }}</p>
+                    <p>{{ patient['trestbps'] }}</p>
                 </div>
 
                 <div class="card warning">
                     <h4>Max Heart Rate</h4>
-                    <p>{{ patient['Max Heart Rate'] }}</p>
+                    <p>{{ patient['thalach'] }}</p>
                 </div>
 
                 <div class="card danger">
                     <h4>ST Depression</h4>
-                    <p>{{ patient['ST Depression'] }}</p>
+                    <p>{{ patient['oldpeak'] }}</p>
                 </div>
+
             </div>
 
+            <!-- BAR GRAPH -->
             <div class="chart-box">
                 <h3>📊 Clinical Parameter Overview</h3>
                 <canvas id="featureChart"></canvas>
@@ -316,18 +325,22 @@ body{
 
         </div>
 
-        <!-- RIGHT SIDE -->
+        <!-- RIGHT -->
         <div class="right">
 
+            <!-- DONUT -->
             <div class="donut-box">
                 <canvas id="riskChart"></canvas>
             </div>
 
             <div class="panel-box">
                 <h4>📊 Risk Intelligence</h4>
-                <p><strong>Prediction:</strong> {{ patient['Prediction'] }}</p>
-                <p><strong>Patient ID:</strong> {{ patient['Patient ID'] }}</p>
-                <p><strong>Assessment Time:</strong><br>{{ patient['Timestamp'] }}</p>
+
+                <!-- ✅ FIXED -->
+                <p><strong>Prediction:</strong> {{ patient['result'] }}</p>
+                <p><strong>Patient ID:</strong> {{ patient['patient_id'] }}</p>
+                <p><strong>Assessment Time:</strong><br>{{ patient['timestamp'] }}</p>
+
             </div>
 
         </div>
@@ -340,22 +353,9 @@ body{
 
 <script>
 
-const probability = {{ patient["Probability (%)"] }};
+const probability = {{ patient["probability"] }};
 
 /* DONUT */
-const centerTextPlugin = {
-    id:'centerText',
-    beforeDraw(chart){
-        const {width,height,ctx}=chart;
-        ctx.save();
-        ctx.font="bold 30px Poppins";
-        ctx.fillStyle="#1e293b";
-        ctx.textAlign="center";
-        ctx.textBaseline="middle";
-        ctx.fillText(probability+"%",width/2,height/2);
-    }
-};
-
 new Chart(document.getElementById('riskChart'),{
     type:'doughnut',
     data:{
@@ -372,29 +372,23 @@ new Chart(document.getElementById('riskChart'),{
     options:{
         cutout:'75%',
         plugins:{legend:{display:false}}
-    },
-    plugins:[centerTextPlugin]
+    }
 });
 
-/* BAR CHART */
+/* BAR */
 new Chart(document.getElementById('featureChart'),{
     type:'bar',
     data:{
         labels:['Cholesterol','Resting BP','Max HR','ST Depression'],
         datasets:[{
             data:[
-                {{ patient['Cholesterol'] }},
-                {{ patient['Resting BP'] }},
-                {{ patient['Max Heart Rate'] }},
-                {{ patient['ST Depression'] }}
+                {{ patient['chol'] }},
+                {{ patient['trestbps'] }},
+                {{ patient['thalach'] }},
+                {{ patient['oldpeak'] }}
             ],
-            backgroundColor:'#2c5364',
-            borderRadius:8
+            backgroundColor:'#2c5364'
         }]
-    },
-    options:{
-        plugins:{legend:{display:false}},
-        scales:{y:{beginAtZero:true}}
     }
 });
 

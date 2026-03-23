@@ -12,10 +12,8 @@ body{
 margin:0;
 font-family:'Poppins',sans-serif;
 background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-color:#1e293b;
 }
 
-/* MAIN CONTAINER */
 .container{
 width:94%;
 max-width:1500px;
@@ -26,12 +24,13 @@ border-radius:25px;
 box-shadow:0 30px 60px rgba(0,0,0,0.25);
 }
 
-/* HEADER */
 .header{
 display:flex;
 justify-content:space-between;
 align-items:center;
 margin-bottom:45px;
+flex-wrap:wrap;
+gap:20px;
 }
 
 .header h1{
@@ -46,6 +45,7 @@ background:linear-gradient(135deg,#2563eb,#9333ea);
 .actions{
 display:flex;
 gap:15px;
+flex-wrap:wrap;
 }
 
 .btn{
@@ -58,30 +58,15 @@ transition:.3s;
 box-shadow:0 8px 20px rgba(0,0,0,0.15);
 }
 
-.btn-primary{
-background:linear-gradient(135deg,#2563eb,#1e40af);
-color:white;
-}
+.btn-primary{background:#2563eb;color:white;}
+.btn-light{background:#e2e8f0;color:#1e293b;}
+.btn-danger{background:#ef4444;color:white;}
 
-.btn-light{
-background:linear-gradient(135deg,#e2e8f0,#cbd5e1);
-color:#1e293b;
-}
+.btn:hover{transform:translateY(-3px);}
 
-.btn-danger{
-background:linear-gradient(135deg,#ef4444,#7f1d1d);
-color:white;
-}
-
-.btn:hover{
-transform:translateY(-3px);
-box-shadow:0 12px 30px rgba(0,0,0,0.25);
-}
-
-/* KPI GRID */
 .kpi-grid{
 display:grid;
-grid-template-columns:repeat(4,1fr);
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 gap:25px;
 margin-bottom:40px;
 }
@@ -91,25 +76,19 @@ padding:30px;
 border-radius:20px;
 color:white;
 text-align:center;
-transition:.3s;
 }
 
-.kpi:hover{
-transform:translateY(-6px);
-}
+.total{background:#475569}
+.low{background:#16a34a}
+.moderate{background:#ea580c}
+.high{background:#dc2626}
 
-.kpi h3{margin:0;font-size:14px;opacity:.9}
+.kpi h3{margin:0;font-size:14px}
 .kpi p{margin:8px 0 0;font-size:30px;font-weight:700}
 
-.total{background:linear-gradient(135deg,#64748b,#334155)}
-.low{background:linear-gradient(135deg,#22c55e,#15803d)}
-.moderate{background:linear-gradient(135deg,#f59e0b,#d97706)}
-.high{background:linear-gradient(135deg,#ef4444,#7f1d1d)}
-
-/* METRICS */
 .metrics{
 display:grid;
-grid-template-columns:repeat(4,1fr);
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
 gap:20px;
 margin-bottom:50px;
 }
@@ -121,15 +100,14 @@ color:white;
 text-align:center;
 }
 
-.metric:nth-child(1){background:linear-gradient(135deg,#3b82f6,#1e3a8a);}
-.metric:nth-child(2){background:linear-gradient(135deg,#9333ea,#6b21a8);}
-.metric:nth-child(3){background:linear-gradient(135deg,#14b8a6,#0f766e);}
-.metric:nth-child(4){background:linear-gradient(135deg,#f43f5e,#9f1239);}
+.metric:nth-child(1){background:#2563eb;}
+.metric:nth-child(2){background:#9333ea;}
+.metric:nth-child(3){background:#0d9488;}
+.metric:nth-child(4){background:#e11d48;}
 
-.metric h4{margin:0;font-size:13px;opacity:.9}
+.metric h4{margin:0;font-size:13px}
 .metric p{margin:8px 0 0;font-size:18px;font-weight:600}
 
-/* ANALYTICS GRID */
 .analytics{
 display:grid;
 grid-template-columns:1fr 1fr;
@@ -141,49 +119,25 @@ margin-bottom:50px;
 padding:30px;
 border-radius:20px;
 color:white;
-box-shadow:0 15px 40px rgba(0,0,0,0.2);
 }
 
-.card:nth-child(1){
-background:linear-gradient(135deg,#0ea5e9,#0369a1);
-}
+.card:nth-child(1){background:#0284c7;}
+.card:nth-child(2){background:#6366f1;}
 
-.card:nth-child(2){
-background:linear-gradient(135deg,#6366f1,#4f46e5);
-}
-
-.card h3{
-margin-top:0;
-margin-bottom:20px;
-}
-
-/* DONUT */
 .donut-container{
 position:relative;
 height:320px;
 }
 
-.center-text{
-position:absolute;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-font-size:24px;
-font-weight:700;
-color:white;
-}
-
-/* INSIGHT */
 .insight{
 margin-top:20px;
 padding:18px;
 border-radius:12px;
-background:rgba(255,255,255,0.15);
+background:rgba(255,255,255,0.2);
 }
 
-/* TREND */
 .trend .card{
-background:linear-gradient(135deg,#1e293b,#334155);
+background:#1e293b;
 }
 
 canvas{max-height:350px}
@@ -195,6 +149,7 @@ canvas{max-height:350px}
 
 <div class="header">
 <h1>🫀 Clinical AI Dashboard</h1>
+
 <div class="actions">
 <a href="{{ url_for('home') }}" class="btn btn-primary">+ New Assessment</a>
 <a href="{{ url_for('history') }}" class="btn btn-light">History</a>
@@ -203,7 +158,6 @@ canvas{max-height:350px}
 </div>
 </div>
 
-<!-- KPI -->
 <div class="kpi-grid">
 <div class="kpi total"><h3>Total Patients</h3><p>{{ total }}</p></div>
 <div class="kpi low"><h3>Low Risk</h3><p>{{ low }}</p></div>
@@ -211,7 +165,6 @@ canvas{max-height:350px}
 <div class="kpi high"><h3>High Risk</h3><p>{{ high }}</p></div>
 </div>
 
-<!-- METRICS -->
 <div class="metrics">
 <div class="metric"><h4>Average Risk Probability</h4><p>{{ avg_probability }}%</p></div>
 <div class="metric"><h4>Highest Risk Patient</h4><p>{{ top_patient }}</p></div>
@@ -230,14 +183,12 @@ canvas{max-height:350px}
 </div>
 </div>
 
-<!-- ANALYTICS -->
 <div class="analytics">
 
 <div class="card">
 <h3>Risk Distribution</h3>
 <div class="donut-container">
 <canvas id="riskChart"></canvas>
-<div class="center-text">{{ total }} Patients</div>
 </div>
 </div>
 
@@ -249,22 +200,20 @@ canvas{max-height:350px}
 
 <div class="insight">
 {% if high_percent >= 50 %}
-⚠ High risk cases dominate. Immediate clinical attention recommended.
+⚠ High risk cases dominate.
 {% elif moderate_percent >= 40 %}
-⚠ Moderate risk rising. Monitoring advised.
+⚠ Moderate risk rising.
 {% else %}
-✓ Majority patients fall under Low Risk category.
+✓ Mostly safe population.
 {% endif %}
 </div>
-
 </div>
 
 </div>
 
-<!-- TREND -->
 <div class="trend">
 <div class="card">
-<h3>📈 Risk Trend (Recent Assessments)</h3>
+<h3>📈 Risk Trend</h3>
 <canvas id="trendChart"></canvas>
 </div>
 </div>
@@ -272,19 +221,53 @@ canvas{max-height:350px}
 </div>
 
 <script>
+
+// ✅ CENTER TEXT FIX
+const totalPatients = {{ total }};
+
+const centerTextPlugin = {
+    id: 'centerText',
+    beforeDraw(chart) {
+        const { width, height, ctx } = chart;
+        ctx.save();
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        ctx.font = "bold 28px Poppins";
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(totalPatients, width / 2, height / 2 - 10);
+
+        ctx.font = "14px Poppins";
+        ctx.fillText("Patients", width / 2, height / 2 + 15);
+
+        ctx.restore();
+    }
+};
+
+// DONUT
 new Chart(document.getElementById('riskChart'),{
 type:'doughnut',
 data:{
-labels:[`Low ({{ low }})`,`Moderate ({{ moderate }})`,`High ({{ high }})`],
+labels:[
+`Low ({{ low }})`,
+`Moderate ({{ moderate }})`,
+`High ({{ high }})`
+],
 datasets:[{
 data:[{{ low }},{{ moderate }},{{ high }}],
 backgroundColor:['#22c55e','#f59e0b','#ef4444'],
 borderWidth:0
 }]
 },
-options:{cutout:'70%',plugins:{legend:{position:'bottom'}}}
+options:{
+cutout:'70%',
+plugins:{legend:{position:'bottom'}}
+},
+plugins:[centerTextPlugin]
 });
 
+// TREND
 new Chart(document.getElementById('trendChart'),{
 type:'line',
 data:{
@@ -295,11 +278,14 @@ data: {{ trend_values|tojson }},
 borderColor:'#38bdf8',
 backgroundColor:'rgba(56,189,248,0.2)',
 fill:true,
-tension:.4
+tension:0.4
 }]
 },
-options:{scales:{y:{beginAtZero:true,max:100}}}
+options:{
+scales:{y:{beginAtZero:true,max:100}}
+}
 });
+
 </script>
 
 </body>
