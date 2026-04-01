@@ -252,6 +252,15 @@ body{
     color: #64748b;
 }
 
+.recommendation ul {
+    margin: 0;
+}
+
+.recommendation li {
+    font-size: 14px;
+    color: #1e293b;
+}
+
 /* PRINT OPTIMIZATION */
 @media print {
     body{ background:white; }
@@ -310,13 +319,11 @@ body{
             <div class="recommendation">
                 <h4>🧠 AI Clinical Recommendation</h4>
 
-                {% if patient["risk_level"] == "HIGH" %}
-                    <p style="color:#dc2626;">Immediate cardiology consultation recommended.</p>
-                {% elif patient["risk_level"] == "MODERATE" %}
-                    <p style="color:#d97706;">Lifestyle modification & monitoring advised.</p>
-                {% else %}
-                    <p style="color:#16a34a;">Low immediate risk. Maintain healthy lifestyle.</p>
-                {% endif %}
+                <ul style="margin-top:10px; padding-left:18px;">
+                    {% for rec in patient["recommendations"] %}
+                    <li style="margin-bottom:6px;">{{ rec }}</li>
+                    {% endfor %}
+                </ul>
             </div>
 
             <div class="recommendation" style="margin-top:15px;">

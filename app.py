@@ -467,7 +467,7 @@ def patient_detail(patient_id):
 
     patient["Probability (%)"] = round(safe_float(patient.get("probability")), 2)
     patient["explanation"] = generate_explanation(patient)
-
+    patient["recommendations"] = generate_recommendation(patient)
     # ----------------------------
     # Reverse Mapping (Text)
     # ----------------------------
@@ -511,6 +511,36 @@ def generate_explanation(patient):
         return "Patient shows mostly normal clinical parameters."
 
     return "Risk factors detected: " + ", ".join(reasons)
+
+def generate_recommendation(patient):
+
+    recommendations = []
+
+    # Cholesterol
+    if patient.get("chol", 0) > 200:
+        recommendations.append("Reduce fatty food intake and monitor cholesterol levels.")
+
+    # Blood Pressure
+    if patient.get("trestbps", 0) > 130:
+        recommendations.append("Reduce salt intake and manage blood pressure regularly.")
+
+    # Heart Rate
+    if patient.get("thalach", 0) < 60:
+        recommendations.append("Monitor heart rate and consult cardiologist if symptoms persist.")
+
+    # ST Depression
+    if patient.get("oldpeak", 0) > 1:
+        recommendations.append("Possible cardiac stress detected. Avoid heavy exertion.")
+
+    # Blocked vessels
+    if patient.get("ca", 0) > 1:
+        recommendations.append("Blocked vessels detected. Immediate cardiology consultation recommended.")
+
+    # FINAL fallback
+    if not recommendations:
+        return ["Maintain healthy lifestyle and regular checkups."]
+
+    return recommendations
 
 # ------------------------------------------------------------
 # Patient Detail
