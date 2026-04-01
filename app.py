@@ -466,6 +466,7 @@ def patient_detail(patient_id):
     patient["ST Depression Status"] = check_range(patient.get("oldpeak"), max_val=1)
 
     patient["Probability (%)"] = round(safe_float(patient.get("probability")), 2)
+    patient["explanation"] = generate_explanation(patient)
 
     # ----------------------------
     # Reverse Mapping (Text)
@@ -480,6 +481,36 @@ def patient_detail(patient_id):
 
     return render_template("patient_detail.html", patient=patient)
     
+
+def generate_explanation(patient):
+
+    reasons = []
+
+    # Cholesterol
+    if patient.get("chol", 0) > 200:
+        reasons.append("High Cholesterol")
+
+    # Blood Pressure
+    if patient.get("trestbps", 0) > 130:
+        reasons.append("High Blood Pressure")
+
+    # Heart Rate
+    if patient.get("thalach", 0) < 60:
+        reasons.append("Low Heart Rate")
+
+    # ST Depression
+    if patient.get("oldpeak", 0) > 1:
+        reasons.append("Elevated ST Depression")
+
+    # Vessels
+    if patient.get("ca", 0) > 1:
+        reasons.append("Blocked Blood Vessels")
+
+    # Final Explanation
+    if not reasons:
+        return "Patient shows mostly normal clinical parameters."
+
+    return "Risk factors detected: " + ", ".join(reasons)
 
 # ------------------------------------------------------------
 # Patient Detail
