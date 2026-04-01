@@ -20,7 +20,8 @@ body {
 /* ============================= */
 
 .container {
-    background: linear-gradient(145deg, #f9fbfc, #eef3f6);
+    background: #e6f4ea;
+
     padding: 45px;
     border-radius: 22px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);

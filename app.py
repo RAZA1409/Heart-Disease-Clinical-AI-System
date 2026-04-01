@@ -296,7 +296,14 @@ def dashboard():
     else:
         system_status = "Stable"
 
+    # Load model info
+    model_info = joblib.load("models/model_info.pkl")
+
+    model_name = model_info["model_name"]
+    model_accuracy = round(model_info["accuracy"] * 100, 2)
     return render_template("dashboard.html",
+        model_name=model_name,
+        model_accuracy=model_accuracy,
         total=total,
         low=low,
         moderate=moderate,
@@ -669,12 +676,8 @@ def download_report(patient_id):
 # Delete
 # ------------------------------------------------------------
 
-@app.route("/delete/<patient_id>")
-def delete_record(patient_id):
-
-    if "user" not in session:
-        return redirect(url_for("login"))
-
+@app.route("/delete/<patient_id>", methods=["POST"])
+def delete(patient_id):
     conn = get_db_connection()
     conn.execute("DELETE FROM patients WHERE patient_id = ?", (patient_id,))
     conn.commit()

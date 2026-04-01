@@ -1,169 +1,155 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Patient History</title>
+<title>Patient History</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
 
-.top-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 30px 0;
-    flex-wrap: wrap;
-    gap: 20px;
+*{box-sizing:border-box}
+
+body{
+margin:0;
+font-family:'Poppins',sans-serif;
+background:linear-gradient(135deg,#0f172a,#1e293b,#020617);
 }
 
-.search-box {
-    position: relative;
+/* MAIN CONTAINER */
+.container{
+width:90%;
+max-width:1200px;
+margin:50px auto;
+padding:35px;
+border-radius:22px;
+
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(18px);
+
+box-shadow:0 20px 60px rgba(0,0,0,0.4);
+border:1px solid rgba(255,255,255,0.15);
 }
 
-.search-box input {
-    background: #f1f5f9;
-    border: 1px solid #cbd5e1;
-    border-radius: 10px;
-    padding: 12px 15px 12px 40px;
-    width: 280px;
-    font-size: 14px;
-    transition: 0.3s;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+/* TITLE */
+h1{
+margin-bottom:25px;
+font-size:28px;
+font-weight:700;
+color:#38bdf8;
 }
 
-.search-box input:focus {
-    outline: none;
-    border-color: #2563eb;
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+/* SEARCH + FILTER */
+.controls{
+display:flex;
+justify-content:space-between;
+flex-wrap:wrap;
+gap:15px;
+margin-bottom:30px;
 }
 
-.search-box span {
-    position: absolute;
-    left: 12px;
-    top: 11px;
-    font-size: 16px;
-    color: #64748b;
+.search{
+padding:12px 16px;
+border-radius:10px;
+border:none;
+outline:none;
+background:rgba(255,255,255,0.1);
+color:white;
+width:260px;
 }
 
-.filter-box select {
-    background: #f1f5f9;
-    border: 1px solid #cbd5e1;
-    border-radius: 10px;
-    padding: 12px 15px;
-    font-size: 14px;
-    transition: 0.3s;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+.select{
+padding:10px;
+border-radius:10px;
+background:rgba(255,255,255,0.1);
+color:white;
+border:none;
 }
 
-.filter-box select:focus {
-    outline: none;
-    border-color: #2563eb;
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+/* TABLE */
+.table{
+width:100%;
+border-collapse:separate;
+border-spacing:0 12px;
 }
 
-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 12px;
+th{
+color:#cbd5f5;
+font-size:14px;
+text-align:left;
+padding:10px;
 }
 
-thead tr {
-    background: linear-gradient(135deg, #2c5364, #203a43);
+tr{
+background:rgba(255,255,255,0.06);
+backdrop-filter:blur(8px);
+transition:.3s;
+cursor:pointer;
+}
+
+tr:hover{
+transform:scale(1.01);
+background:rgba(255,255,255,0.12);
+box-shadow: 0 0 8px #38bdf8;
+}
+
+td{
+padding:16px 12px;
+color:white;
+}
+
+/* BADGES */
+.badge{
+padding:6px 12px;
+border-radius:20px;
+font-size:12px;
+font-weight:600;
+}
+
+.low{background:#16a34a}
+.moderate{background:#f97316}
+.high{background:#dc2626}
+
+/* BUTTON */
+.delete-btn{
+background:#ef4444;
+color:white;
+border:none;
+padding:8px 12px;
+border-radius:8px;
+cursor:pointer;
+transition:.3s;
+}
+
+.delete-btn:hover{
+transform:scale(1.1);
+box-shadow: 0 0 8px #f85838;
+}
+
+/* BACK BUTTON */
+.back{
+margin-top:25px;
+display:inline-block;
+padding:10px 18px;
+border-radius:10px;
+background:#1e293b;
+color:white;
+text-decoration:none;
+transition:.3s;
+}
+
+.back:hover{
+transform:translateY(-3px);
+box-shadow: 0 0 8px #38bdf8;
+}
+
+.select option {
+    background: #1e293b;
     color: white;
 }
 
-th {
-    padding: 16px;
-    font-weight: 500;
+.select:hover {
+    box-shadow: 0 0 8px #38bdf8;
 }
-
-tbody tr {
-    background: #ffffff;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    transition: 0.2s ease;
-    cursor: pointer;
-}
-
-tbody tr:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-}
-
-td {
-    padding: 16px;
-    text-align: center;
-    font-size: 14px;
-}
-
-.badge {
-    min-width: 90px;
-    padding: 6px 0;
-    border-radius: 20px;
-    color: white;
-    font-size: 12px;
-    font-weight: 500;
-    display: inline-block;
-}
-
-.low { background: linear-gradient(135deg,#2e7d32,#1b5e20); }
-.moderate { background: linear-gradient(135deg,#ef6c00,#e65100); }
-.high { background: linear-gradient(135deg,#c62828,#8e0000); }
-
-.action-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-}
-
-.btn {
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 500;
-    text-decoration: none;
-    color: white;
-    transition: 0.3s;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.btn-delete {
-    background: linear-gradient(135deg,#ef4444,#dc2626);
-}
-
-.btn-delete:hover {
-    background: linear-gradient(135deg,#dc2626,#991b1b);
-    transform: translateY(-1px);
-}
-
-.back-btn {
-    margin-top: 35px;
-    display: inline-block;
-    text-decoration: none;
-    background: linear-gradient(135deg,#2c5364,#203a43);
-    color: white;
-    padding: 12px 24px;
-    border-radius: 8px;
-    transition: 0.3s;
-}
-
-.back-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-}
-
-.no-result {
-    text-align: center;
-    padding: 25px;
-    font-weight: 500;
-    color: #64748b;
-    display: none;
-}
-
 </style>
 </head>
 
@@ -171,136 +157,96 @@ td {
 
 <div class="container">
 
-    <h1 style="color:#2c5364;">📁 Patient History Records</h1>
+<h1>📁 Patient History Records</h1>
 
-    {% if patients|length == 0 %}
-        <p style="margin-top:40px;">No patient records available.</p>
-    {% else %}
+<div class="controls">
 
-    <div class="top-controls">
+<input type="text" id="search" class="search" placeholder="Search by ID or Name">
 
-        <div class="search-box">
-            <span>🔍</span>
-            <input type="text" id="searchInput"
-                   placeholder="Search by ID or Name">
-        </div>
+<select id="filter" class="select">
+<option value="">All Risk Levels</option>
+<option value="LOW">Low</option>
+<option value="MODERATE">Moderate</option>
+<option value="HIGH">High</option>
+</select>
 
-        <div class="filter-box">
-            🎯
-            <select id="riskFilter">
-                <option value="ALL">All Risk Levels</option>
-                <option value="LOW">Low</option>
-                <option value="MODERATE">Moderate</option>
-                <option value="HIGH">High</option>
-            </select>
-        </div>
+</div>
 
-    </div>
+<table class="table" id="table">
 
-    <table id="historyTable">
+<thead>
+<tr>
+<th>Patient ID</th>
+<th>Name</th>
+<th>Age</th>
+<th>Risk</th>
+<th>Time</th>
+<th>Action</th>
+</tr>
+</thead>
 
-        <thead>
-            <tr>
-                <th>Patient ID</th>
-                <th>Patient Name</th>
-                <th>Age</th>
-                <th>Risk Level</th>
-                <th>Timestamp</th>
-                <th>Action</th>
-            </tr>
-        </thead>
+<tbody>
 
-        <tbody>
+{% for p in patients %}
+<tr onclick="window.location='/patient/{{ p.patient_id }}'">
 
-        {% for patient in patients %}
-            <tr
-                onclick="window.location='{{ url_for('patient_detail', patient_id=patient['patient_id']) }}'"
-                data-id="{{ patient['patient_id']|lower }}"
-                data-name="{{ patient['patient_name']|lower }}"
-                data-risk="{{ patient['risk_level'] }}">
+<td>{{ p.patient_id }}</td>
+<td>{{ p.patient_name }}</td>
+<td>{{ p.age }}</td>
 
-                <td>{{ patient['patient_id'] }}</td>
-                <td>{{ patient['patient_name'] }}</td>
-                <td>{{ patient['age'] }}</td>
+<td>
+<span class="badge 
+{% if p.risk_level == 'LOW' %}low
+{% elif p.risk_level == 'MODERATE' %}moderate
+{% else %}high{% endif %}">
+{{ p.risk_level }}
+</span>
+</td>
 
-                <td>
-                    <span class="badge
-                        {% if patient['risk_level'] == 'LOW' %}low
-                        {% elif patient['risk_level'] == 'MODERATE' %}moderate
-                        {% else %}high{% endif %}">
-                        {{ patient['risk_level'] }}
-                    </span>
-                </td>
+<td>{{ p.timestamp }}</td>
 
-                <td>{{ patient['timestamp'] }}</td>
+<td>
+<form method="POST" action="/delete/{{ p.patient_id }}" onsubmit="event.stopPropagation();">
+<button type="submit" class="delete-btn" onclick="event.stopPropagation();">
+Delete
+</button>
+</form>
+</td>
 
-                <td>
-                    <div class="action-buttons">
+</tr>
+{% endfor %}
 
-                        <a href="{{ url_for('delete_record', patient_id=patient['patient_id']) }}"
-                           class="btn btn-delete"
-                           onclick="event.stopPropagation(); return confirm('Delete this record?');">
-                           🗑 Delete
-                        </a>
+</tbody>
 
-                    </div>
-                </td>
-            </tr>
-        {% endfor %}
+</table>
 
-        </tbody>
-    </table>
-
-    <div id="noResult" class="no-result">
-        No matching records found.
-    </div>
-
-    {% endif %}
-
-    <a href="{{ url_for('dashboard') }}" class="back-btn">← Back to Dashboard</a>
+<a href="/dashboard" class="back">← Back to Dashboard</a>
 
 </div>
 
 <script>
-const searchInput = document.getElementById("searchInput");
-const riskFilter = document.getElementById("riskFilter");
-const rows = document.querySelectorAll("#historyTable tbody tr");
-const noResult = document.getElementById("noResult");
 
-function filterTable() {
+/* SEARCH */
+document.getElementById("search").addEventListener("keyup", function(){
+let value = this.value.toLowerCase();
+let rows = document.querySelectorAll("#table tbody tr");
 
-    const searchValue = searchInput.value.toLowerCase();
-    const selectedRisk = riskFilter.value;
-    let visibleCount = 0;
+rows.forEach(row=>{
+row.style.display = row.innerText.toLowerCase().includes(value) ? "" : "none";
+});
+});
 
-    rows.forEach(row => {
+/* FILTER */
+document.getElementById("filter").addEventListener("change", function(){
+let value = this.value;
+let rows = document.querySelectorAll("#table tbody tr");
 
-        const id = row.dataset.id;
-        const name = row.dataset.name;
-        const risk = row.dataset.risk;
+rows.forEach(row=>{
+let risk = row.children[3].innerText.trim();
+row.style.display = (value === "" || risk === value) ? "" : "none";
+});
+});
 
-        const matchSearch =
-            id.includes(searchValue) ||
-            name.includes(searchValue);
-
-        const matchRisk =
-            selectedRisk === "ALL" ||
-            risk === selectedRisk;
-
-        if (matchSearch && matchRisk) {
-            row.style.display = "";
-            visibleCount++;
-        } else {
-            row.style.display = "none";
-        }
-
-    });
-
-    noResult.style.display = visibleCount === 0 ? "block" : "none";
-}
-
-searchInput.addEventListener("keyup", filterTable);
-riskFilter.addEventListener("change", filterTable);
 </script>
 
 </body>
