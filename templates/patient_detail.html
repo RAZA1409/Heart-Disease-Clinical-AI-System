@@ -261,6 +261,16 @@ body{
     color: #1e293b;
 }
 
+.alert-box {
+    border-left: 6px solid #ef4444;
+    background: #fff5f5;
+}
+
+.alert-box li {
+    color: #dc2626;
+    font-weight: 500;
+}
+
 /* PRINT OPTIMIZATION */
 @media print {
     body{ background:white; }
@@ -328,8 +338,24 @@ body{
 
             <div class="recommendation" style="margin-top:15px;">
                 <h4>🧠 AI Clinical Explanation</h4>
+                
                 <p>{{ patient["explanation"] }}</p>
             </div>
+            <div class="recommendation" style="margin-top:15px; border-left:6px solid #ef4444;">
+                    <h4>⚠️ Clinical Risk Alerts</h4>
+
+                    {% if patient["alerts"] %}
+                    <ul style="margin-top:10px; padding-left:18px;">
+                    {% for alert in patient["alerts"] %}
+                    <li style="margin-bottom:6px; color:#dc2626; font-weight:500;">
+                        {{ alert }}
+                    </li>
+                        {% endfor %}
+                    </ul>
+                        {% else %}
+                    <p style="color:#16a34a;">No critical alerts detected.</p>
+                     {% endif %}
+                </div>
 
             <!-- ✅ FIXED VALUES -->
             <div class="feature-grid">

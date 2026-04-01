@@ -468,6 +468,7 @@ def patient_detail(patient_id):
     patient["Probability (%)"] = round(safe_float(patient.get("probability")), 2)
     patient["explanation"] = generate_explanation(patient)
     patient["recommendations"] = generate_recommendation(patient)
+    patient["alerts"] = generate_alerts(patient)
     # ----------------------------
     # Reverse Mapping (Text)
     # ----------------------------
@@ -484,33 +485,27 @@ def patient_detail(patient_id):
 
 def generate_explanation(patient):
 
-    reasons = []
+    explanations = []
 
-    # Cholesterol
     if patient.get("chol", 0) > 200:
-        reasons.append("High Cholesterol")
+        explanations.append("Elevated cholesterol levels may increase cardiovascular risk.")
 
-    # Blood Pressure
     if patient.get("trestbps", 0) > 130:
-        reasons.append("High Blood Pressure")
+        explanations.append("Blood pressure is higher than normal range.")
 
-    # Heart Rate
     if patient.get("thalach", 0) < 60:
-        reasons.append("Low Heart Rate")
+        explanations.append("Heart rate is below normal limits.")
 
-    # ST Depression
     if patient.get("oldpeak", 0) > 1:
-        reasons.append("Elevated ST Depression")
+        explanations.append("ST depression indicates possible cardiac stress.")
 
-    # Vessels
     if patient.get("ca", 0) > 1:
-        reasons.append("Blocked Blood Vessels")
+        explanations.append("Multiple vessels show signs of blockage.")
 
-    # Final Explanation
-    if not reasons:
-        return "Patient shows mostly normal clinical parameters."
+    if not explanations:
+        return "All clinical parameters are within normal range."
 
-    return "Risk factors detected: " + ", ".join(reasons)
+    return " ".join(explanations)
 
 def generate_recommendation(patient):
 
@@ -541,6 +536,36 @@ def generate_recommendation(patient):
         return ["Maintain healthy lifestyle and regular checkups."]
 
     return recommendations
+
+def generate_alerts(patient):
+
+    alerts = []
+
+    # Cholesterol
+    if patient.get("chol", 0) > 200:
+        alerts.append("⚠️ High Cholesterol detected")
+
+    # Blood Pressure
+    if patient.get("trestbps", 0) > 130:
+        alerts.append("⚠️ Elevated Blood Pressure")
+
+    # Heart Rate
+    if patient.get("thalach", 0) < 60:
+        alerts.append("⚠️ Low Heart Rate")
+
+    # ST Depression
+    if patient.get("oldpeak", 0) > 1:
+        alerts.append("⚠️ Cardiac stress detected")
+
+    # Vessels
+    if patient.get("ca", 0) > 1:
+        alerts.append("⚠️ Multiple blocked vessels")
+
+    # 🔥 Summary Alert
+    if len(alerts) >= 3:
+        alerts.append("🚨 Multiple risk factors detected. Immediate attention required.")
+
+    return alerts
 
 # ------------------------------------------------------------
 # Patient Detail
