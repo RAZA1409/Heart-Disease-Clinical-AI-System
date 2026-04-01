@@ -225,6 +225,33 @@ body{
     box-shadow:0 10px 25px rgba(0,0,0,0.2);
 }
 
+/* 🔥 DONUT CENTER FIX */
+.donut-container {
+    position: relative;
+    width: 260px;
+    height: 260px;
+}
+
+.chart-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.chart-value {
+    font-size: 30px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.chart-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #64748b;
+}
+
 /* PRINT OPTIMIZATION */
 @media print {
     body{ background:white; }
@@ -291,7 +318,7 @@ body{
                     <p style="color:#16a34a;">Low immediate risk. Maintain healthy lifestyle.</p>
                 {% endif %}
             </div>
-            
+
             <div class="recommendation" style="margin-top:15px;">
                 <h4>🧠 AI Clinical Explanation</h4>
                 <p>{{ patient["explanation"] }}</p>
@@ -335,8 +362,18 @@ body{
 
             <!-- DONUT -->
             <div class="donut-box">
+
+            <div class="donut-container">
                 <canvas id="riskChart"></canvas>
+
+                 <!-- 🔥 CENTER TEXT -->
+                <div class="chart-center">
+                    <div class="chart-value">{{ patient['probability'] }}%</div>
+                    <div class="chart-label">{{ patient['risk_level'] }}</div>
+                </div>
             </div>
+
+</div>
 
             <div class="panel-box">
                 <h4>📊 Risk Intelligence</h4>
@@ -361,22 +398,29 @@ body{
 const probability = {{ patient["probability"] }};
 
 /* DONUT */
-new Chart(document.getElementById('riskChart'),{
-    type:'doughnut',
-    data:{
-        datasets:[{
-            data:[probability,100-probability],
-            backgroundColor:[
-                probability<30?'#22c55e':
-                probability<70?'#f59e0b':'#ef4444',
-                '#e5e7eb'
-            ],
-            borderWidth:0
+let color;
+
+if (probability < 30) {
+    color = "#22c55e";   // Low → Green
+} else if (probability < 70) {
+    color = "#f59e0b";   // Moderate → Orange
+} else {
+    color = "#ef4444";   // High → Red
+}
+new Chart(document.getElementById('riskChart'), {
+    type: 'doughnut',
+    data: {
+        datasets: [{
+            data: [probability, 100 - probability],
+            backgroundColor: [color, "#e5e7eb"],
+            borderWidth: 0
         }]
     },
-    options:{
-        cutout:'75%',
-        plugins:{legend:{display:false}}
+    options: {
+        cutout: '75%',
+        plugins: {
+            legend: { display: false }
+        }
     }
 });
 
