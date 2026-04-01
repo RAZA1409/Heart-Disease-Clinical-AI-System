@@ -271,6 +271,23 @@ body{
     font-weight: 500;
 }
 
+.card.intelligence {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.card.intelligence h3 {
+    margin-bottom: 15px;
+}
+
+.card.intelligence p {
+    margin: 8px 0;
+    font-size: 15px;
+}
+
 /* PRINT OPTIMIZATION */
 @media print {
     body{ background:white; }
@@ -394,7 +411,7 @@ body{
         <div class="right">
 
             <!-- DONUT -->
-            <div class="donut-box">
+        <div class="donut-box">
 
             <div class="donut-container">
                 <canvas id="riskChart"></canvas>
@@ -406,7 +423,19 @@ body{
                 </div>
             </div>
 
-</div>
+        </div>
+
+            <div class="card intelligence">
+                <h3>📊 Risk Intelligence</h3>
+
+                <p><strong>Risk Level:</strong> {{ patient['risk_level'] }}</p>
+
+                <p><strong>Confidence:</strong> {{ patient['confidence'] }}%</p>
+
+                <p><strong>Key Driver:</strong> {{ patient['key_driver'] }}</p>
+
+                <p><strong>Trend:</strong> {{ patient['trend'] }}</p>
+            </div>
 
             <div class="panel-box">
                 <h4>📊 Risk Intelligence</h4>

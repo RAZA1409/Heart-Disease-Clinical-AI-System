@@ -469,6 +469,48 @@ def patient_detail(patient_id):
     patient["explanation"] = generate_explanation(patient)
     patient["recommendations"] = generate_recommendation(patient)
     patient["alerts"] = generate_alerts(patient)
+
+
+    # ----------------------------
+    # 🔥 RISK INTELLIGENCE ENGINE
+    # ----------------------------
+
+    # Risk Level
+    risk_level = patient.get("risk_level", "UNKNOWN")
+
+    # Confidence (based on probability)
+    prob = safe_float(patient.get("probability"))
+    confidence = abs(prob - 50) * 2   # scale 0–100
+
+    # Key Driver Detection
+    drivers = []
+
+    if patient.get("chol", 0) > 200:
+        drivers.append("High Cholesterol")
+
+    if patient.get("trestbps", 0) > 130:
+        drivers.append("High Blood Pressure")
+
+    if patient.get("oldpeak", 0) > 1:
+        drivers.append("Cardiac Stress")
+
+    if patient.get("ca", 0) > 1:
+        drivers.append("Blocked Vessels")
+
+    key_driver = drivers[0] if drivers else "No major risk detected"
+
+    # Trend logic
+    if prob > 70:
+        trend = "Risk increasing"
+    elif prob > 40:
+        trend = "Moderate risk zone"
+    else:
+        trend = "Stable condition"
+
+    # Attach to patient dict
+    patient["confidence"] = round(confidence, 2)
+    patient["key_driver"] = key_driver
+    patient["trend"] = trend
     # ----------------------------
     # Reverse Mapping (Text)
     # ----------------------------
