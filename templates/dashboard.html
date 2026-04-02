@@ -275,6 +275,11 @@ Accuracy: {{ model_accuracy }}%
 
 </div>
 
+<div class="card">
+<h3>📊 Model Comparison</h3>
+<canvas id="modelChart"></canvas>
+</div>
+
 <!-- TREND -->
 <div class="trend">
 <div class="card">
@@ -312,6 +317,30 @@ borderColor:'#38bdf8',
 fill:true,
 tension:0.4
 }]
+}
+});
+
+// MODEL COMPARISON CHART
+new Chart(document.getElementById('modelChart'),{
+type:'bar',
+data:{
+labels: {{ model_labels|tojson }},
+datasets:[{
+label:'Accuracy (%)',
+data: {{ model_values|tojson }},
+backgroundColor:['#38bdf8','#f59e0b','#ef4444']
+}]
+},
+options:{
+plugins:{
+legend:{display:false}
+},
+scales:{
+y:{
+beginAtZero:true,
+max:100
+}
+}
 }
 });
 

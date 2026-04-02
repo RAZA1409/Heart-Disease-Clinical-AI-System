@@ -127,7 +127,8 @@ joblib.dump(list(X.columns), "models/feature_columns.pkl")
 # Save model info (🔥 VERY IMPORTANT FOR DASHBOARD)
 model_info = {
     "model_name": best_model_name,
-    "accuracy": results[best_model_name]
+    "accuracy": results[best_model_name],
+    "all_models": results
 }
 
 joblib.dump(model_info, "models/model_info.pkl")
