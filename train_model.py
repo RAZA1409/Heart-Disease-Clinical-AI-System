@@ -160,7 +160,7 @@ plt.close()
 # 6. SAVE BEST MODEL
 # ============================================================
 
-joblib.dump(ga_model, "models/model.pkl")
+joblib.dump(ga_model, "models/ga_model.pkl")
 joblib.dump(scaler, "models/scaler.pkl")
 joblib.dump(X.columns.tolist(), "models/feature_columns.pkl")
 

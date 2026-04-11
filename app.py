@@ -299,8 +299,14 @@ def dashboard():
     # Load model info
     model_info = joblib.load("models/model_info.pkl")
     all_models = model_info.get("all_models", {})
+
     model_labels = list(all_models.keys())
-    model_values = [round(v * 100, 2) for v in all_models.values()]
+
+    # TEST accuracy (already used)
+    model_values = [round(v["test"] * 100, 2) for v in all_models.values()]
+
+    # 🔥 NEW: TRAIN accuracy
+    train_values = [round(v["train"] * 100, 2) for v in all_models.values()]
 
     model_name = model_info["model_name"]
     model_accuracy = round(model_info["accuracy"] * 100, 2)
@@ -309,6 +315,7 @@ def dashboard():
         model_labels=model_labels,
         model_values=model_values,
         model_accuracy=model_accuracy,
+        train_values=train_values,
         total=total,
         low=low,
         moderate=moderate,

@@ -77,12 +77,28 @@ for name, model in models.items():
     print(f"Training {name}...")
 
     model.fit(X_train, y_train)
-    preds = model.predict(X_test)
 
-    acc = accuracy_score(y_test, preds)
-    results[name] = acc
+    # Predictions
+    train_preds = model.predict(X_train)
+    test_preds = model.predict(X_test)
 
-    print(f"{name} Accuracy: {acc:.4f}\n")
+    # Accuracy
+    train_acc = accuracy_score(y_train, train_preds)
+    test_acc = accuracy_score(y_test, test_preds)
+
+    # Error (Loss equivalent)
+    error = 1 - test_acc
+
+    # Store detailed results
+    results[name] = {
+        "train": train_acc,
+        "test": test_acc,
+        "error": error
+    }
+
+    print(f"{name} Train Accuracy: {train_acc:.4f}")
+    print(f"{name} Test Accuracy: {test_acc:.4f}")
+    print(f"{name} Error: {error:.4f}\n")
 
 
 # ============================================================
@@ -93,20 +109,21 @@ print("\n==============================")
 print("MODEL COMPARISON RESULTS")
 print("==============================\n")
 
-for name, acc in results.items():
-    print(f"{name}: {acc:.4f}")
-
+for name, metrics in results.items():
+    print(f"{name}:")
+    print(f"  Train Accuracy: {metrics['train']:.4f}")
+    print(f"  Test Accuracy : {metrics['test']:.4f}")
+    print(f"  Error         : {metrics['error']:.4f}\n")
 
 # ============================================================
 # BEST MODEL SELECTION
 # ============================================================
 
-best_model_name = max(results, key=results.get)
+best_model_name = max(results, key=lambda x: results[x]["test"])
 best_model = models[best_model_name]
 
 print(f"\nBest Model Selected: {best_model_name}")
-print(f"Best Accuracy: {results[best_model_name]*100:.2f}%\n")
-
+print(f"Best Accuracy: {results[best_model_name]['test']*100:.2f}%\n")
 
 # ============================================================
 # SAVE MODEL FILES
@@ -127,7 +144,7 @@ joblib.dump(list(X.columns), "models/feature_columns.pkl")
 # Save model info (🔥 VERY IMPORTANT FOR DASHBOARD)
 model_info = {
     "model_name": best_model_name,
-    "accuracy": results[best_model_name],
+    "accuracy": results[best_model_name]["test"],
     "all_models": results
 }
 

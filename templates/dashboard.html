@@ -273,12 +273,19 @@ Accuracy: {{ model_accuracy }}%
 
 </div>
 
+<div class="card">
+    <h3>📊 Training vs Testing Accuracy</h3>
+    <canvas id="trainTestChart"></canvas>
 </div>
 
 <div class="card">
 <h3>📊 Model Comparison</h3>
 <canvas id="modelChart"></canvas>
 </div>
+
+</div>
+
+
 
 <!-- TREND -->
 <div class="trend">
@@ -344,6 +351,37 @@ max:100
 }
 });
 
+// TRAIN vs TEST GRAPH
+new Chart(document.getElementById('trainTestChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ model_labels|tojson }},
+        datasets: [
+            {
+                label: 'Train Accuracy (%)',
+                data: {{ train_values|tojson }},
+                backgroundColor: '#38bdf8'
+            },
+            {
+                label: 'Test Accuracy (%)',
+                data: {{ model_values|tojson }},
+                backgroundColor: '#22c55e'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'top' }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
 </script>
 
 </body>
