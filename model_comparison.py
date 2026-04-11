@@ -7,10 +7,11 @@ import numpy as np
 import os
 import joblib
 
+from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score
-
+from sklearn.metrics import log_loss
 # Models
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -88,18 +89,37 @@ for name, model in models.items():
 
     # Error (Loss equivalent)
     error = 1 - test_acc
+    
 
+    train_loss = log_loss(y_train, model.predict_proba(X_train))
+    test_loss = log_loss(y_test, model.predict_proba(X_test))
     # Store detailed results
     results[name] = {
         "train": train_acc,
         "test": test_acc,
-        "error": error
+        "error": error,
+        "train_loss": train_loss,
+        "test_loss": test_loss
     }
 
     print(f"{name} Train Accuracy: {train_acc:.4f}")
     print(f"{name} Test Accuracy: {test_acc:.4f}")
     print(f"{name} Error: {error:.4f}\n")
 
+# ============================================================
+# BEST MODEL SELECTION
+# ============================================================
+best_model_name = max(results, key=lambda x: results[x]["test"])
+best_model = models[best_model_name]
+# Confusion Matrix for Best Model
+best_preds = best_model.predict(X_test)
+cm = confusion_matrix(y_test, best_preds)
+
+# Convert to list for saving
+cm_list = cm.tolist()
+
+print(f"\nBest Model Selected: {best_model_name}")
+print(f"Best Accuracy: {results[best_model_name]['test']*100:.2f}%\n")
 
 # ============================================================
 # DISPLAY RESULTS
@@ -115,15 +135,6 @@ for name, metrics in results.items():
     print(f"  Test Accuracy : {metrics['test']:.4f}")
     print(f"  Error         : {metrics['error']:.4f}\n")
 
-# ============================================================
-# BEST MODEL SELECTION
-# ============================================================
-
-best_model_name = max(results, key=lambda x: results[x]["test"])
-best_model = models[best_model_name]
-
-print(f"\nBest Model Selected: {best_model_name}")
-print(f"Best Accuracy: {results[best_model_name]['test']*100:.2f}%\n")
 
 # ============================================================
 # SAVE MODEL FILES
@@ -145,7 +156,9 @@ joblib.dump(list(X.columns), "models/feature_columns.pkl")
 model_info = {
     "model_name": best_model_name,
     "accuracy": results[best_model_name]["test"],
-    "all_models": results
+    "all_models": results,
+    "confusion_matrix": cm_list,   
+    "comparison": {k: v["test"] for k, v in results.items()}
 }
 
 joblib.dump(model_info, "models/model_info.pkl")

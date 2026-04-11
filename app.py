@@ -301,10 +301,13 @@ def dashboard():
     all_models = model_info.get("all_models", {})
 
     model_labels = list(all_models.keys())
-
-    # TEST accuracy (already used)
-    model_values = [round(v["test"] * 100, 2) for v in all_models.values()]
-
+    model_values = [round(all_models[m]["test"] * 100, 2) for m in model_labels]
+    train_loss_values = [round(all_models[m]["train_loss"], 3) for m in model_labels]
+    test_loss_values = [round(all_models[m]["test_loss"], 3) for m in model_labels]
+    opt = joblib.load("models/optimization_comparison.pkl")
+    opt_labels = list(opt.keys())
+    opt_values = [round(v*100,2) for v in opt.values()]
+    conf_matrix = model_info.get("confusion_matrix", [[0,0],[0,0]])
     # 🔥 NEW: TRAIN accuracy
     train_values = [round(v["train"] * 100, 2) for v in all_models.values()]
 
@@ -316,8 +319,13 @@ def dashboard():
         model_values=model_values,
         model_accuracy=model_accuracy,
         train_values=train_values,
+        train_loss_values=train_loss_values,
+        test_loss_values=test_loss_values,
+        conf_matrix=conf_matrix,
         total=total,
         low=low,
+        opt_labels=opt_labels,
+        opt_values=opt_values,
         moderate=moderate,
         high=high,
         low_percent=low_percent,

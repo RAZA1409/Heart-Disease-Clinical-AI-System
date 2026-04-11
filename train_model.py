@@ -134,6 +134,10 @@ grid_test_accuracy = accuracy_score(y_test, grid_best.predict(X_test_scaled))
 print("Best Grid Parameters:", grid.best_params_)
 print("Grid Search Test Accuracy:", round(grid_test_accuracy * 100, 2), "%")
 
+
+
+
+joblib.dump(comparison, "models/optimization_comparison.pkl")
 # ============================================================
 # 4. CONFUSION MATRIX
 # ============================================================

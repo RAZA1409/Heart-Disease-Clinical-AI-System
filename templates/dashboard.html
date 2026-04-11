@@ -283,6 +283,37 @@ Accuracy: {{ model_accuracy }}%
 <canvas id="modelChart"></canvas>
 </div>
 
+<div class="card">
+    <h3>📊 Confusion Matrix</h3>
+    <canvas id="cmChart"></canvas>
+</div>
+
+<div class="card">
+    <h3>⚙ Optimization Comparison</h3>
+    <canvas id="optChart"></canvas>
+</div>
+
+<div class="card">
+<h3>🧠 Model Insights</h3>
+
+<p>
+Logistic Regression was selected as the best model due to highest test accuracy and better generalization.
+</p>
+
+<p>
+Random Forest showed overfitting (Train = 100%, Test lower).
+</p>
+
+<p>
+SVM performed moderately with balanced performance.
+</p>
+
+</div>
+
+<div class="card">
+    <h3>📉 Model Loss Comparison</h3>
+    <canvas id="lossChart"></canvas>
+</div>
 </div>
 
 
@@ -382,6 +413,67 @@ new Chart(document.getElementById('trainTestChart'), {
         }
     }
 });
+
+// CONFUSION MATRIX
+new Chart(document.getElementById('cmChart'), {
+    type: 'bar',
+    data: {
+        labels: ['True Negative', 'False Positive', 'False Negative', 'True Positive'],
+        datasets: [{
+            label: 'Count',
+            data: [
+                {{ conf_matrix[0][0] }},
+                {{ conf_matrix[0][1] }},
+                {{ conf_matrix[1][0] }},
+                {{ conf_matrix[1][1] }}
+            ],
+            backgroundColor: ['#22c55e','#ef4444','#f59e0b','#38bdf8']
+        }]
+    }
+});
+
+
+new Chart(document.getElementById('optChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ opt_labels|tojson }},
+        datasets: [{
+            label: 'Accuracy (%)',
+            data: {{ opt_values|tojson }},
+            backgroundColor: ['#8b5cf6','#22c55e']
+        }]
+    }
+});
+
+new Chart(document.getElementById("lossChart"), {
+    type: 'bar',
+    data: {
+        labels: {{ model_labels | tojson }},
+        datasets: [
+            {
+                label: 'Train Loss',
+                data: {{ train_loss_values | tojson }},
+                backgroundColor: '#ef4444'
+            },
+            {
+                label: 'Test Loss',
+                data: {{ test_loss_values | tojson }},
+                backgroundColor: '#f97316'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { labels: { color: 'white' } }
+        },
+        scales: {
+            x: { ticks: { color: 'white' } },
+            y: { ticks: { color: 'white' } }
+        }
+    }
+});
+
 </script>
 
 </body>
