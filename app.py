@@ -115,9 +115,9 @@ def check_range(value, min_val=None, max_val=None):
 
 @app.route("/")
 def home():
-    print("HOME ROUTE HIT")
-    session.clear()   # 🔥 force logout
-    return redirect(url_for("login"))
+    if "user" not in session:
+        return redirect(url_for("login"))
+    return redirect(url_for("dashboard"))
 
 # ------------------------------------------------------------
 # Login
@@ -339,6 +339,12 @@ def dashboard():
         trend_values=trend_values,
         system_status=system_status
     )
+
+@app.route("/predict", methods=["GET"])
+def predict_page():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    return render_template("predict.html")
 # ------------------------------------------------------------
 # Prediction
 # ------------------------------------------------------------
