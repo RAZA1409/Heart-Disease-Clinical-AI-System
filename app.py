@@ -340,11 +340,15 @@ def dashboard():
         system_status=system_status
     )
 
-@app.route("/predict", methods=["GET"])
+
+@app.route("/predict_page")
 def predict_page():
     if "user" not in session:
         return redirect(url_for("login"))
+
     return render_template("predict.html")
+
+
 # ------------------------------------------------------------
 # Prediction
 # ------------------------------------------------------------
