@@ -115,9 +115,9 @@ def check_range(value, min_val=None, max_val=None):
 
 @app.route("/")
 def home():
-    if "user" not in session:
-        return redirect(url_for("login"))
-    return render_template("index.html")
+    if "user" in session:
+        return redirect(url_for("dashboard"))
+    return redirect(url_for("login"))
 
 # ------------------------------------------------------------
 # Login
