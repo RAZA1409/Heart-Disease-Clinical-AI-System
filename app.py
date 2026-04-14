@@ -299,7 +299,7 @@ def dashboard():
     # Load model info
     model_info = joblib.load("models/model_info.pkl")
     all_models = model_info.get("all_models", {})
-
+    feature_importance = model_info.get("feature_importance", {})
     model_labels = list(all_models.keys())
     model_values = [round(all_models[m]["test"] * 100, 2) for m in model_labels]
     train_loss_values = [round(all_models[m]["train_loss"], 3) for m in model_labels]
@@ -323,6 +323,7 @@ def dashboard():
         test_loss_values=test_loss_values,
         conf_matrix=conf_matrix,
         total=total,
+        feature_importance=feature_importance,
         low=low,
         opt_labels=opt_labels,
         opt_values=opt_values,

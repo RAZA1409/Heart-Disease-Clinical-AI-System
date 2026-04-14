@@ -294,6 +294,16 @@ Accuracy: {{ model_accuracy }}%
 </div>
 
 <div class="card">
+    <h3>📉 Model Loss Comparison</h3>
+    <canvas id="lossChart"></canvas>
+</div>
+
+<div class="card">
+    <h3>📊 Feature Importance</h3>
+    <canvas id="featureChart"></canvas>
+</div>
+
+<div class="card">
 <h3>🧠 Model Insights</h3>
 
 <p>
@@ -310,10 +320,7 @@ SVM performed moderately with balanced performance.
 
 </div>
 
-<div class="card">
-    <h3>📉 Model Loss Comparison</h3>
-    <canvas id="lossChart"></canvas>
-</div>
+
 </div>
 
 
@@ -470,6 +477,29 @@ new Chart(document.getElementById("lossChart"), {
         scales: {
             x: { ticks: { color: 'white' } },
             y: { ticks: { color: 'white' } }
+        }
+    }
+});
+
+
+const featureData = {{ feature_importance | tojson }};
+
+const labels = Object.keys(featureData);
+const values = Object.values(featureData);
+
+new Chart(document.getElementById("featureChart"), {
+    type: "bar",
+    data: {
+        labels: labels,
+        datasets: [{
+            label: "Importance",
+            data: values
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false }
         }
     }
 });

@@ -161,6 +161,27 @@ model_info = {
     "comparison": {k: v["test"] for k, v in results.items()}
 }
 
+# ==========================
+# FEATURE IMPORTANCE
+# ==========================
+
+feature_importance = {}
+
+if "Random Forest" in models:
+    rf_model = models["Random Forest"]
+    
+    importance = rf_model.feature_importances_
+    features = list(X.columns)
+
+    # Convert to dictionary
+    feature_importance = dict(zip(features, importance))
+
+    # Sort descending
+    feature_importance = dict(sorted(feature_importance.items(), key=lambda x: x[1], reverse=True))
+
+# Add to model_info
+model_info["feature_importance"] = feature_importance
+
 joblib.dump(model_info, "models/model_info.pkl")
 
 
