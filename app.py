@@ -115,8 +115,8 @@ def check_range(value, min_val=None, max_val=None):
 
 @app.route("/")
 def home():
-    if "user" in session:
-        return redirect(url_for("dashboard"))
+    print("HOME ROUTE HIT")
+    session.clear()   # 🔥 force logout
     return redirect(url_for("login"))
 
 # ------------------------------------------------------------
@@ -163,7 +163,7 @@ def login():
 
 @app.route("/logout")
 def logout():
-    session.pop("user", None)
+    session.clear()
     return redirect(url_for("login"))
 
 # ------------------------------------------------------------
