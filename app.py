@@ -707,7 +707,9 @@ def delete(patient_id):
 # ------------------------------------------------------------
 # Run
 # ------------------------------------------------------------
-
 if __name__ == "__main__":
-    webbrowser.open("http://127.0.0.1:5000/login")
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
+
+# if __name__ == "__main__":
+#     webbrowser.open("http://127.0.0.1:5000/login")
+#     app.run(debug=True)
