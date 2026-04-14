@@ -1,17 +1,12 @@
 # Virtual environment
 venv/
-
 # Python cache
 __pycache__/
 *.pyc
-
 # Model files
-models/*.pkl
-records/*.pdf
 
+records/*.pdf
 # Records
 records/*.csv
-
 # VS Code settings
 .vscode/
-random.html
