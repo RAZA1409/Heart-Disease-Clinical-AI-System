@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import os
 import joblib
-
+from sklearn.metrics import roc_curve, auc
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -65,7 +65,7 @@ models = {
     "Random Forest": RandomForestClassifier(n_estimators=100)
 }
 
-
+roc_data = {}
 # ============================================================
 # TRAINING & EVALUATION
 # ============================================================
@@ -82,7 +82,16 @@ for name, model in models.items():
     # Predictions
     train_preds = model.predict(X_train)
     test_preds = model.predict(X_test)
+    probs = model.predict_proba(X_test)[:, 1]
 
+    fpr, tpr, _ = roc_curve(y_test, probs)
+    roc_auc = auc(fpr, tpr)
+
+    roc_data[name] = {
+        "fpr": fpr.tolist(),
+        "tpr": tpr.tolist(),
+        "auc": roc_auc
+    }
     # Accuracy
     train_acc = accuracy_score(y_train, train_preds)
     test_acc = accuracy_score(y_test, test_preds)
@@ -156,6 +165,7 @@ joblib.dump(list(X.columns), "models/feature_columns.pkl")
 model_info = {
     "model_name": best_model_name,
     "accuracy": results[best_model_name]["test"],
+    "roc_data": roc_data,
     "all_models": results,
     "confusion_matrix": cm_list,   
     "comparison": {k: v["test"] for k, v in results.items()}

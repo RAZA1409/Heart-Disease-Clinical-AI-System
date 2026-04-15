@@ -298,6 +298,7 @@ def dashboard():
 
     # Load model info
     model_info = joblib.load("models/model_info.pkl")
+    roc_data = model_info.get("roc_data", {})
     all_models = model_info.get("all_models", {})
     feature_importance = model_info.get("feature_importance", {})
     model_labels = list(all_models.keys())
@@ -318,6 +319,7 @@ def dashboard():
         model_labels=model_labels,
         model_values=model_values,
         model_accuracy=model_accuracy,
+        roc_data=roc_data,
         train_values=train_values,
         train_loss_values=train_loss_values,
         test_loss_values=test_loss_values,

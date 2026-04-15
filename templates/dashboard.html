@@ -294,6 +294,11 @@ Accuracy: {{ model_accuracy }}%
 </div>
 
 <div class="card">
+    <h3>📈 ROC Curve (Model Performance)</h3>
+    <canvas id="rocChart"></canvas>
+</div>
+
+<div class="card">
     <h3>📉 Model Loss Comparison</h3>
     <canvas id="lossChart"></canvas>
 </div>
@@ -503,6 +508,44 @@ new Chart(document.getElementById("featureChart"), {
         }
     }
 });
+
+
+
+
+
+const rocData = {{ roc_data | tojson }};
+
+const datasets = [];
+
+for (const model in rocData) {
+    datasets.push({
+        label: model + " (AUC: " + rocData[model].auc.toFixed(2) + ")",
+        data: rocData[model].fpr.map((fpr, i) => ({
+            x: fpr,
+            y: rocData[model].tpr[i]
+        })),
+        fill: false
+    });
+}
+
+new Chart(document.getElementById("rocChart"), {
+    type: "line",
+    data: {
+        datasets: datasets
+    },
+    options: {
+        scales: {
+            x: {
+                type: "linear",
+                title: { display: true, text: "False Positive Rate" }
+            },
+            y: {
+                title: { display: true, text: "True Positive Rate" }
+            }
+        }
+    }
+});
+
 
 </script>
 
