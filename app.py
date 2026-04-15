@@ -298,6 +298,23 @@ def dashboard():
 
     # Load model info
     model_info = joblib.load("models/model_info.pkl")
+
+    # ==========================
+    # OVERFITTING DETECTION
+    # ==========================
+
+    overfitting_status = {}
+    all_models = model_info.get("all_models", {})
+    for model_name, metrics in all_models.items():
+        train_acc = metrics.get("train", 0)
+        test_acc = metrics.get("test", 0)
+        gap = train_acc - test_acc
+
+        if gap > 0.1:
+            overfitting_status[model_name] = "Overfitting"
+        else:
+            overfitting_status[model_name] = "Good"
+
     roc_data = model_info.get("roc_data", {})
     all_models = model_info.get("all_models", {})
     feature_importance = model_info.get("feature_importance", {})
@@ -320,6 +337,7 @@ def dashboard():
         model_values=model_values,
         model_accuracy=model_accuracy,
         roc_data=roc_data,
+        overfitting_status=overfitting_status,
         train_values=train_values,
         train_loss_values=train_loss_values,
         test_loss_values=test_loss_values,

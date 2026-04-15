@@ -284,6 +284,21 @@ Accuracy: {{ model_accuracy }}%
 </div>
 
 <div class="card">
+    <h3>⚠ Overfitting Analysis</h3>
+
+    {% for model, status in overfitting_status.items() %}
+        <p>
+            <strong>{{ model }}:</strong> 
+            {% if status == "Overfitting" %}
+                <span style="color: red;">⚠ Overfitting</span>
+            {% else %}
+                <span style="color: lightgreen;">✔ Generalizing Well</span>
+            {% endif %}
+        </p>
+    {% endfor %}
+</div>
+
+<div class="card">
     <h3>📊 Confusion Matrix</h3>
     <canvas id="cmChart"></canvas>
 </div>
