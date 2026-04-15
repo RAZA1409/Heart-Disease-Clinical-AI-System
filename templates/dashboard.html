@@ -322,7 +322,10 @@ Accuracy: {{ model_accuracy }}%
     <h3>📊 Feature Importance</h3>
     <canvas id="featureChart"></canvas>
 </div>
-
+<div class="card">
+    <h3>📊 Precision, Recall & F1 Score</h3>
+    <canvas id="prfChart"></canvas>
+</div>
 <div class="card">
 <h3>🧠 Model Insights</h3>
 
@@ -561,6 +564,38 @@ new Chart(document.getElementById("rocChart"), {
     }
 });
 
+
+const prfData = {{ prf_data | tojson }};
+
+const models = Object.keys(prfData);
+
+const precision = models.map(m => prfData[m].precision);
+const recall = models.map(m => prfData[m].recall);
+const f1 = models.map(m => prfData[m].f1);
+
+new Chart(document.getElementById("prfChart"), {
+    type: "bar",
+    data: {
+        labels: models,
+        datasets: [
+            {
+                label: "Precision",
+                data: precision
+            },
+            {
+                label: "Recall",
+                data: recall
+            },
+            {
+                label: "F1 Score",
+                data: f1
+            }
+        ]
+    },
+    options: {
+        responsive: true
+    }
+});
 
 </script>
 

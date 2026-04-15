@@ -298,7 +298,7 @@ def dashboard():
 
     # Load model info
     model_info = joblib.load("models/model_info.pkl")
-
+    prf_data = model_info.get("prf_data", {})
     # ==========================
     # OVERFITTING DETECTION
     # ==========================
@@ -337,6 +337,7 @@ def dashboard():
         model_values=model_values,
         model_accuracy=model_accuracy,
         roc_data=roc_data,
+        prf_data=prf_data,
         overfitting_status=overfitting_status,
         train_values=train_values,
         train_loss_values=train_loss_values,

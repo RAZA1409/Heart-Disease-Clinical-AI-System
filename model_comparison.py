@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import os
 import joblib
+from sklearn.metrics import precision_score, recall_score, f1_score
 from sklearn.metrics import roc_curve, auc
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -66,6 +67,7 @@ models = {
 }
 
 roc_data = {}
+prf_data = {}
 # ============================================================
 # TRAINING & EVALUATION
 # ============================================================
@@ -82,6 +84,15 @@ for name, model in models.items():
     # Predictions
     train_preds = model.predict(X_train)
     test_preds = model.predict(X_test)
+    precision = precision_score(y_test, test_preds)
+    recall = recall_score(y_test, test_preds)
+    f1 = f1_score(y_test, test_preds)
+
+    prf_data[name] = {
+        "precision": precision,
+        "recall": recall,
+        "f1": f1
+    }
     probs = model.predict_proba(X_test)[:, 1]
 
     fpr, tpr, _ = roc_curve(y_test, probs)
@@ -166,6 +177,7 @@ model_info = {
     "model_name": best_model_name,
     "accuracy": results[best_model_name]["test"],
     "roc_data": roc_data,
+    "prf_data": prf_data,
     "all_models": results,
     "confusion_matrix": cm_list,   
     "comparison": {k: v["test"] for k, v in results.items()}
