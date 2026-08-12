@@ -22,6 +22,14 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 from flask import send_file
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv()
+
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY")
+)
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
@@ -118,6 +126,9 @@ def home():
     if "user" not in session:
         return redirect(url_for("login"))
     return redirect(url_for("dashboard"))
+
+
+
 
 # ------------------------------------------------------------
 # Login
@@ -736,11 +747,377 @@ def delete(patient_id):
     conn.close()
     return redirect(url_for("history"))
 
+
+
+# ------------------------------------------------------------
+# 🤖 AI CLINICAL ASSISTANT
+# ------------------------------------------------------------
+
+@app.route("/ai_assistant", methods=["POST"])
+def ai_assistant():
+
+    # --------------------------------------------------------
+    # Check login
+    # --------------------------------------------------------
+
+    if "user" not in session:
+        return {"error": "Unauthorized"}, 401
+
+    # --------------------------------------------------------
+    # Get request data
+    # --------------------------------------------------------
+
+    data = request.get_json() or {}
+
+    user_message = data.get("message", "").strip()
+    patient_id = data.get("patient_id", "").strip()
+
+    if not user_message:
+        return {"error": "Message is required"}, 400
+
+    if not patient_id:
+        return {"error": "Patient information is missing"}, 400
+
+    try:
+
+        # ----------------------------------------------------
+        # Get patient from database
+        # ----------------------------------------------------
+
+        conn = get_db_connection()
+
+        patient_row = conn.execute(
+            "SELECT * FROM patients WHERE patient_id = ?",
+            (patient_id,)
+        ).fetchone()
+
+        conn.close()
+
+        if not patient_row:
+            return {"error": "Patient not found"}, 404
+
+        patient = dict(patient_row)
+
+        # ----------------------------------------------------
+        # Convert encoded values into human-readable text
+        # ----------------------------------------------------
+
+        sex_text = REVERSE_FEATURE_MAP["sex"].get(
+            patient.get("sex"),
+            str(patient.get("sex"))
+        )
+
+        cp_text = REVERSE_FEATURE_MAP["cp"].get(
+            patient.get("cp"),
+            str(patient.get("cp"))
+        )
+
+        fbs_text = REVERSE_FEATURE_MAP["fbs"].get(
+            patient.get("fbs"),
+            str(patient.get("fbs"))
+        )
+
+        restecg_text = REVERSE_FEATURE_MAP["restecg"].get(
+            patient.get("restecg"),
+            str(patient.get("restecg"))
+        )
+
+        exang_text = REVERSE_FEATURE_MAP["exang"].get(
+            patient.get("exang"),
+            str(patient.get("exang"))
+        )
+
+        slope_text = REVERSE_FEATURE_MAP["slope"].get(
+            patient.get("slope"),
+            str(patient.get("slope"))
+        )
+
+        thal_text = REVERSE_FEATURE_MAP["thal"].get(
+            patient.get("thal"),
+            str(patient.get("thal"))
+        )
+
+        # ----------------------------------------------------
+        # Generate the same clinical analysis used by
+        # the Patient Detail page
+        # ----------------------------------------------------
+
+        patient["explanation"] = generate_explanation(patient)
+
+        patient["recommendations"] = generate_recommendation(patient)
+
+        patient["alerts"] = generate_alerts(patient)
+
+        # ----------------------------------------------------
+        # Risk Intelligence
+        # ----------------------------------------------------
+
+        probability = safe_float(patient.get("probability"))
+
+        confidence = abs(probability - 50) * 2
+
+        drivers = []
+
+        if safe_float(patient.get("chol")) > 200:
+            drivers.append("High Cholesterol")
+
+        if safe_float(patient.get("trestbps")) > 130:
+            drivers.append("High Blood Pressure")
+
+        if safe_float(patient.get("oldpeak")) > 1:
+            drivers.append("Cardiac Stress indicator")
+
+        if safe_float(patient.get("ca")) > 1:
+            drivers.append("Multiple affected vessels")
+
+        key_driver = (
+            drivers[0]
+            if drivers
+            else "No major rule-based risk factor detected"
+        )
+
+        if probability > 70:
+            trend = "Risk increasing"
+        elif probability > 40:
+            trend = "Moderate risk zone"
+        else:
+            trend = "Stable condition"
+
+        # ----------------------------------------------------
+        # Build patient context for the AI
+        # ----------------------------------------------------
+
+        patient_context = f"""
+CURRENT PATIENT INFORMATION
+----------------------------
+
+Patient ID: {patient.get('patient_id')}
+Patient Name: {patient.get('patient_name')}
+Age: {patient.get('age')}
+Sex: {sex_text}
+
+CLINICAL PARAMETERS
+-------------------
+
+Chest Pain Type: {cp_text}
+Resting Blood Pressure: {patient.get('trestbps')}
+Cholesterol: {patient.get('chol')} mg/dL
+Fasting Blood Sugar: {fbs_text}
+Resting ECG: {restecg_text}
+Maximum Heart Rate: {patient.get('thalach')}
+Exercise-Induced Angina: {exang_text}
+ST Depression: {patient.get('oldpeak')}
+Slope of ST: {slope_text}
+Number of Vessels: {patient.get('ca')}
+Thalassemia: {thal_text}
+
+APPLICATION PREDICTION
+----------------------
+
+Prediction: {patient.get('result')}
+Probability: {patient.get('probability')}%
+Risk Level: {patient.get('risk_level')}
+
+APPLICATION RISK INTELLIGENCE
+-----------------------------
+
+Confidence: {round(confidence, 2)}%
+Key Driver: {key_driver}
+Trend: {trend}
+
+APPLICATION CLINICAL EXPLANATION
+--------------------------------
+
+{patient.get('explanation')}
+
+APPLICATION ALERTS
+------------------
+
+{chr(10).join(patient.get('alerts', [])) if patient.get('alerts') else "No critical alerts detected."}
+
+APPLICATION RECOMMENDATIONS
+---------------------------
+
+{chr(10).join(patient.get('recommendations', []))}
+"""
+
+        # ----------------------------------------------------
+        # Send patient context + question to AI
+        # ----------------------------------------------------
+
+        response = client.responses.create(
+
+            model="gpt-5-mini",
+
+            instructions="""
+You are the Explainable Clinical AI Assistant inside a
+Heart Disease Clinical AI Dashboard.
+
+Your purpose is to HELP USERS UNDERSTAND the application's
+existing heart-disease prediction.
+
+The machine-learning model makes the prediction.
+You explain the result.
+
+IMPORTANT RULES:
+
+1. NEVER claim that the patient definitely has or does not
+   have heart disease.
+
+2. NEVER present the AI prediction as a medical diagnosis.
+
+3. NEVER invent patient information.
+
+4. Use ONLY the patient information supplied in the context.
+
+5. When explaining why a result is HIGH, MODERATE or LOW,
+   explain the relevant clinical factors that are actually
+   present in the supplied information.
+
+6. Clearly distinguish between:
+   - the application's prediction
+   - the probability/risk estimate
+   - clinical indicators
+   - an actual medical diagnosis
+
+7. The "Key Driver" and alerts are generated by the
+   application's rule-based clinical analysis. Do not claim
+   that they are necessarily the exact features used by the
+   underlying machine-learning model unless the supplied
+   information explicitly says so.
+
+8. If the user asks "Why did the model say this?", explain
+   using the available prediction information and clinical
+   indicators, but be honest that the displayed rule-based
+   factors are explanations/indicators and not necessarily
+   the model's exact feature contribution.
+
+9. Explain medical terminology in simple language.
+
+10. If the user asks about a value, explain:
+    - what the value represents
+    - whether the application flags it
+    - why it may matter
+    - how it relates to the application's result
+
+11. If there is insufficient information, say that there
+    is not enough information.
+
+12. Do not change, override or recalculate the application's
+    prediction.
+
+13. Do not prescribe medication or provide personalized
+    treatment instructions.
+
+14. If the user describes severe or emergency symptoms,
+    recommend seeking appropriate professional medical
+    attention promptly.
+
+15. Keep responses clear, structured and easy for a normal
+    user to understand.
+
+16. The purpose of the assistant is explanation and education,
+    not diagnosis.
+""",
+
+            input=f"""
+{patient_context}
+
+USER QUESTION
+-------------
+
+{user_message}
+"""
+        )
+
+        return {
+            "reply": response.output_text
+        }
+
+    except Exception as e:
+
+        print("AI Assistant Error:", repr(e))
+
+        return {
+            "error": f"AI Error: {str(e)}"
+    }, 500
+
+
+
+@app.route("/test_patient_context/<patient_id>")
+def test_patient_context(patient_id):
+
+    try:
+        conn = get_db_connection()
+
+        patient_row = conn.execute(
+            "SELECT * FROM patients WHERE patient_id = ?",
+            (patient_id,)
+        ).fetchone()
+
+        conn.close()
+
+        if not patient_row:
+            return "Patient not found", 404
+
+        patient = dict(patient_row)
+
+        return f"""
+        <h2>AI Patient Context Test</h2>
+
+        <h3>Patient</h3>
+        Patient ID: {patient.get('patient_id')}<br>
+        Name: {patient.get('patient_name')}<br>
+        Age: {patient.get('age')}<br>
+        Sex: {patient.get('sex')}<br>
+
+        <h3>Clinical Parameters</h3>
+        Blood Pressure: {patient.get('trestbps')}<br>
+        Cholesterol: {patient.get('chol')}<br>
+        Maximum Heart Rate: {patient.get('thalach')}<br>
+        ST Depression: {patient.get('oldpeak')}<br>
+        Vessels: {patient.get('ca')}<br>
+
+        <h3>Prediction</h3>
+        Prediction: {patient.get('result')}<br>
+        Probability: {patient.get('probability')}%<br>
+        Risk Level: {patient.get('risk_level')}<br>
+        """
+
+    except Exception as e:
+
+        print("Context Test Error:", e)
+
+        return f"Error: {str(e)}", 500
+
+
+
+
+# @app.route("/test_ai")
+# def test_ai():
+
+#     try:
+
+#         response = client.responses.create(
+#             model="gpt-5-mini",
+#             input="Say hello and confirm that the Clinical AI Assistant is connected."
+#         )
+
+#         return response.output_text
+
+#     except Exception as e:
+
+#         return f"AI Error: {str(e)}"
+
+
 # ------------------------------------------------------------
 # Run
 # ------------------------------------------------------------
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+    
 
 # if __name__ == "__main__":
 #     webbrowser.open("http://127.0.0.1:5000/login")

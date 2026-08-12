@@ -10,3 +10,4 @@ records/*.pdf
 records/*.csv
 # VS Code settings
 .vscode/
+.env
