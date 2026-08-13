@@ -11,7 +11,7 @@ import webbrowser
 import sqlite3
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
-from auth import init_db
+from database import get_db_connection, init_db
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib import colors
@@ -144,7 +144,7 @@ def login():
         password = request.form["password"]
         remember = request.form.get("remember")
 
-        conn = sqlite3.connect("database.db")
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT password FROM users WHERE username = ?", (username,))
         result = cursor.fetchone()
@@ -191,8 +191,8 @@ def change_password():
 
         current_password = request.form["current_password"]
         new_password = request.form["new_password"]
-
-        conn = sqlite3.connect("database.db")
+        conn = get_db_connection()
+        # conn = sqlite3.connect("database.db")
         cursor = conn.cursor()
 
         cursor.execute("SELECT password FROM users WHERE username = ?", (session["user"],))
@@ -234,7 +234,7 @@ def forgot_password():
             return render_template("forgot_password.html",
                                    error="Password must be at least 8 characters long")
 
-        conn = sqlite3.connect("database.db")
+        conn = get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
