@@ -21,6 +21,7 @@ from database import get_db_connection
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
+from datetime import timedelta
 from flask import send_file
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -32,6 +33,8 @@ client = OpenAI(
 )
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
+
+app.permanent_session_lifetime = timedelta(days=30)
 
 # ============================================================
 # FEATURE MAPPING (UI → MODEL)
@@ -152,6 +155,8 @@ def login():
 
         if result and check_password_hash(result[0], password):
             session["user"] = username
+            if remember:
+                session.permanent = True
 
             response = make_response(redirect(url_for("dashboard")))
 
