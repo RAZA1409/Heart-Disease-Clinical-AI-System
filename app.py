@@ -228,7 +228,16 @@ def forgot_password():
 
     if request.method == "POST":
         username = request.form["username"]
+        recovery_code = request.form["recovery_code"]
         new_password = request.form["new_password"]
+
+        stored_code = os.getenv("ADMIN_RECOVERY_CODE")
+
+        if recovery_code != stored_code:
+            return render_template(
+                "forgot_password.html",
+                error="Invalid Recovery Code"
+            )
 
         if len(new_password) < 8:
             return render_template("forgot_password.html",
