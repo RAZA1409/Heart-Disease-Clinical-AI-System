@@ -339,21 +339,38 @@ body{
     position: fixed;
     right: 25px;
     bottom: 25px;
+
     width: 62px;
     height: 62px;
+
     border-radius: 50%;
     border: none;
+
     background: linear-gradient(135deg, #2563eb, #1e40af);
     color: white;
+
     font-size: 28px;
-    cursor: pointer;
+
+    cursor: grab;
+
     box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+
     z-index: 9999;
-    transition: 0.3s;
+
+    transition: transform 0.2s, box-shadow 0.2s;
+
+    user-select: none;
+    touch-action: none;
 }
 
 .ai-chat-button:hover {
     transform: scale(1.08);
+}
+
+.ai-chat-button.dragging {
+    cursor: grabbing;
+    transform: scale(1.08);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.30);
 }
 
 /* Chat Window */
@@ -428,27 +445,39 @@ body{
 
 .ai-message {
     margin-bottom: 14px;
-    max-width: 85%;
-    padding: 12px 15px;
-    border-radius: 14px;
+    max-width: 88%;
+    padding: 13px 16px;
+    border-radius: 15px;
     font-size: 13px;
-    line-height: 1.6;
+    line-height: 1.65;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
 }
 
 .ai-message.bot {
-    background: white;
+    background: #ffffff;
     color: #1e293b;
+    margin-bottom: 16px;
     border: 1px solid #e2e8f0;
-    border-top-left-radius: 4px;
+    border-top-left-radius: 5px;
 }
 
 .ai-message.user {
     background: #2563eb;
     color: white;
     margin-left: auto;
-    border-top-right-radius: 4px;
+    border-top-right-radius: 5px;
 }
 
+.ai-message strong {
+    font-weight: 700;
+    color: #172554;
+}
+.ai-message.bot br + br {
+    display: block;
+    content: "";
+    margin-top: 5px;
+}
 /* Input */
 
 .ai-chat-input-area {
@@ -680,7 +709,10 @@ body{
      🤖 AI CLINICAL ASSISTANT
      ========================================================= -->
 
-<button class="ai-chat-button" onclick="toggleAIChat()" title="Clinical AI Assistant">
+<button
+    class="ai-chat-button"
+    id="aiChatButton"
+    title="Clinical AI Assistant">
     🤖
 </button>
 
@@ -787,6 +819,108 @@ body{
 // =========================================================
 // 🤖 AI CLINICAL ASSISTANT UI
 // =========================================================
+// =========================================================
+// 🤖 DRAGGABLE AI CHAT BUTTON
+// =========================================================
+
+const aiChatButton = document.getElementById("aiChatButton");
+
+let isDraggingAI = false;
+let aiStartX = 0;
+let aiStartY = 0;
+let aiStartLeft = 0;
+let aiStartTop = 0;
+let aiMoved = false;
+
+aiChatButton.addEventListener("pointerdown", function(event) {
+
+    isDraggingAI = true;
+    aiMoved = false;
+
+    aiStartX = event.clientX;
+    aiStartY = event.clientY;
+
+    const rect = aiChatButton.getBoundingClientRect();
+
+    aiStartLeft = rect.left;
+    aiStartTop = rect.top;
+
+    aiChatButton.classList.add("dragging");
+
+    aiChatButton.setPointerCapture(event.pointerId);
+
+});
+
+
+aiChatButton.addEventListener("pointermove", function(event) {
+
+    if (!isDraggingAI) {
+        return;
+    }
+
+    const deltaX = event.clientX - aiStartX;
+    const deltaY = event.clientY - aiStartY;
+
+    // Only consider it a drag after moving a few pixels
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+        aiMoved = true;
+    }
+
+    if (!aiMoved) {
+        return;
+    }
+
+    let newLeft = aiStartLeft + deltaX;
+    let newTop = aiStartTop + deltaY;
+
+    // Keep button inside the screen
+    const buttonWidth = aiChatButton.offsetWidth;
+    const buttonHeight = aiChatButton.offsetHeight;
+
+    const maxLeft = window.innerWidth - buttonWidth;
+    const maxTop = window.innerHeight - buttonHeight;
+
+    newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+    newTop = Math.max(0, Math.min(newTop, maxTop));
+
+    aiChatButton.style.left = newLeft + "px";
+    aiChatButton.style.top = newTop + "px";
+
+    // Remove right/bottom positioning once dragged
+    aiChatButton.style.right = "auto";
+    aiChatButton.style.bottom = "auto";
+
+});
+
+
+aiChatButton.addEventListener("pointerup", function(event) {
+
+    if (!isDraggingAI) {
+        return;
+    }
+
+    isDraggingAI = false;
+
+    aiChatButton.classList.remove("dragging");
+
+    aiChatButton.releasePointerCapture(event.pointerId);
+
+});
+
+
+aiChatButton.addEventListener("click", function(event) {
+
+    // If the user dragged the button,
+    // don't open the chatbot accidentally.
+    if (aiMoved) {
+        aiMoved = false;
+        return;
+    }
+
+    toggleAIChat();
+
+});
+
 
 function toggleAIChat() {
 
@@ -807,6 +941,7 @@ function toggleAIChat() {
 function handleAIEnter(event) {
 
     if (event.key === "Enter") {
+        event.preventDefault();
         sendAIMessage();
     }
 
@@ -821,12 +956,40 @@ function addAIMessage(message, type) {
 
     messageDiv.className = "ai-message " + type;
 
-    messageDiv.innerHTML = message;
+    let formattedMessage = String(message);
+
+    // Clean escaped Markdown
+    formattedMessage = formattedMessage.replace(/\\([*_])/g, "$1");
+
+    // Remove Markdown headings
+    formattedMessage = formattedMessage.replace(/^#{1,6}\s*/gm, "");
+
+    // Convert bold Markdown
+    formattedMessage = formattedMessage.replace(
+        /\*\*(.*?)\*\*/gs,
+        "<strong>$1</strong>"
+    );
+
+    // Convert bullet points
+    formattedMessage = formattedMessage.replace(
+        /^\s*[*-]\s+/gm,
+        "• "
+    );
+
+    // Remove leftover standalone asterisks
+    formattedMessage = formattedMessage.replace(
+        /^\s*\*+\s*$/gm,
+        ""
+    );
+
+    // Preserve line breaks
+    formattedMessage = formattedMessage.replace(/\n/g, "<br>");
+
+    messageDiv.innerHTML = formattedMessage;
 
     messages.appendChild(messageDiv);
 
     messages.scrollTop = messages.scrollHeight;
-
 }
 
 function askAIQuestion(question) {
@@ -900,12 +1063,15 @@ async function sendAIMessage() {
         if (messages.lastElementChild) {
             messages.removeChild(messages.lastElementChild);
         }
-
         if (data.reply) {
+
+            console.log("COMPLETE REPLY FROM SERVER:");
+            console.log(data.reply);
+            console.log("REPLY LENGTH:", data.reply.length);
 
             addAIMessage(data.reply, "bot");
 
-        } else if (data.error) {
+        }else if (data.error) {
 
             addAIMessage(
                 "⚠️ " + data.error,

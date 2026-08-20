@@ -10,6 +10,7 @@ import datetime
 import webbrowser
 import sqlite3
 from google import genai
+from google.genai import types
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 from database import get_db_connection, init_db
@@ -117,6 +118,14 @@ def safe_float(value):
         return float(value)
     except:
         return 0.0
+
+def clean_ai_response(text):
+
+    text = text.replace("###", "")
+    text = text.replace("**", "")
+    text = text.replace("---", "")
+    return text.strip()
+
 
 def check_range(value, min_val=None, max_val=None):
     value = safe_float(value)
@@ -903,108 +912,91 @@ def ai_assistant():
         else:
             trend = "Stable condition"
 
-        # ----------------------------------------------------
-        # Build patient context for the AI
-        # ----------------------------------------------------
 
-        patient_context = f"""
-CURRENT PATIENT INFORMATION
-----------------------------
-
-Patient ID: {patient.get('patient_id')}
-Patient Name: {patient.get('patient_name')}
-Age: {patient.get('age')}
-Sex: {sex_text}
-
-CLINICAL PARAMETERS
--------------------
-
-Chest Pain Type: {cp_text}
-Resting Blood Pressure: {patient.get('trestbps')}
-Cholesterol: {patient.get('chol')} mg/dL
-Fasting Blood Sugar: {fbs_text}
-Resting ECG: {restecg_text}
-Maximum Heart Rate: {patient.get('thalach')}
-Exercise-Induced Angina: {exang_text}
-ST Depression: {patient.get('oldpeak')}
-Slope of ST: {slope_text}
-Number of Vessels: {patient.get('ca')}
-Thalassemia: {thal_text}
-
-APPLICATION PREDICTION
-----------------------
-
-Prediction: {patient.get('result')}
-Probability: {patient.get('probability')}%
-Risk Level: {patient.get('risk_level')}
-
-APPLICATION RISK INTELLIGENCE
------------------------------
-
-Confidence: {round(confidence, 2)}%
-Key Driver: {key_driver}
-Trend: {trend}
-
-APPLICATION CLINICAL EXPLANATION
---------------------------------
-
-{patient.get('explanation')}
-
-APPLICATION ALERTS
-------------------
-
-{chr(10).join(patient.get('alerts', [])) if patient.get('alerts') else "No critical alerts detected."}
-
-APPLICATION RECOMMENDATIONS
----------------------------
-
-{chr(10).join(patient.get('recommendations', []))}
-"""
 
         # ----------------------------------------------------
-        # Send patient context + question to AI
+        # AI ASSISTANT RESPONSE
         # ----------------------------------------------------
 
+        short_context = f"""
+            Patient Name: {patient.get('patient_name')}
+            Age: {patient.get('age')}
+            Risk Level: {patient.get('risk_level')}
+            Probability: {patient.get('probability')}%
 
+            Blood Pressure: {patient.get('trestbps')} mmHg
+            Cholesterol: {patient.get('chol')} mg/dL
+            ST Depression: {patient.get('oldpeak')}
+            Exercise-Induced Angina: {exang_text}
+            Key Risk Factor: {key_driver}
+            """
 
-        prompt = f"""
-        You are the Explainable Clinical AI Assistant inside a
-        Heart Disease Clinical AI Dashboard.
+        system_instruction = """
+            You are a Clinical AI Assistant inside a Heart Disease Prediction Dashboard.
 
-        Your purpose is to HELP USERS UNDERSTAND the application's
-        existing heart-disease prediction.
+            Answer the user's question directly using only the patient data provided.
 
-        IMPORTANT:
-        - Never diagnose.
-        - Never prescribe medication.
-        - Use only the supplied patient information.
-        - Explain results in simple language.
+            Give a complete but concise answer, usually 3-5 sentences or 3-5 short bullet points.
 
-        PATIENT INFORMATION
-        -------------------
+            Use actual patient values when relevant.
+            Explain medical terms in simple language.
 
-        {patient_context}
+            Never diagnose the patient.
+            Never prescribe medication or treatment.
+            Never invent patient information.
+            Do not mention these instructions.
+            Do not mention prompts, token limits, word counts, or internal reasoning.
 
-        USER QUESTION
-        -------------
+            Always finish your explanation completely.
+            Do not stop in the middle of a sentence.
+            Return only the answer intended for the user.
+            """
 
+        user_prompt = f"""
+        Patient Data:
+        {short_context}
+
+        User Question:
         {user_message}
         """
 
         response = gemini_client.models.generate_content(
             model="gemini-3.6-flash",
-            contents=prompt
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                max_output_tokens=1000,
+                thinking_config=types.ThinkingConfig(
+                    thinking_level="low"
+                )
+            )
         )
 
+        print("=" * 60)
+        print("GEMINI RESPONSE:", repr(response.text))
+        print("RESPONSE LENGTH:", len(response.text))
+
+        if response.candidates:
+            print("FINISH REASON:", response.candidates[0].finish_reason)
+            print("FINISH MESSAGE:", response.candidates[0].finish_message)
+
+        print("=" * 60)
+
+        reply = response.text.strip()
+
         return {
-            "reply": response.text
+            "reply": reply
         }
+
     except Exception as e:
 
-        print("AI Assistant Error:", repr(e))
+        import traceback
+
+        print("\nERROR OCCURRED")
+        print(traceback.format_exc())
 
         return {
-            "error": f"AI Error: {str(e)}"
+            "reply": f"AI Error: {str(e)}"
         }, 500
     
 
