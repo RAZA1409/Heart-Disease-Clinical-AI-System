@@ -1,6 +1,9 @@
 """
-Centralized Clinical Risk Classification Configuration.
-Standardized thresholds across backend, CLI, dashboard, and UI templates.
+Centralized Risk Classification Configuration (Clinical Decision Support).
+Standardized probability thresholds across backend, CLI, dashboard, and UI templates.
+
+Note: Probability tiers (LOW, MODERATE, HIGH) represent heuristic statistical decision-support
+estimates from machine learning models. They are not clinically validated diagnostic stages.
 """
 
 # Thresholds as percentages (0 - 100)

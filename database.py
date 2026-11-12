@@ -30,7 +30,7 @@ def init_db():
         )
     """)
 
-    # PATIENTS TABLE
+    # PATIENTS TABLE (Heart Disease)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS patients (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,6 +49,27 @@ def init_db():
             slope INTEGER,
             ca INTEGER,
             thal INTEGER,
+            result TEXT,
+            probability REAL,
+            risk_level TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # DIABETES PATIENTS TABLE
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS diabetes_patients (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id TEXT,
+            patient_name TEXT,
+            age INTEGER,
+            pregnancies INTEGER,
+            glucose REAL,
+            blood_pressure REAL,
+            skin_thickness REAL,
+            insulin REAL,
+            bmi REAL,
+            dpf REAL,
             result TEXT,
             probability REAL,
             risk_level TEXT,

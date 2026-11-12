@@ -229,7 +229,10 @@ No patient records found. <a href="{{ url_for('predict_page') }}" style="color:#
 
 </table>
 
-<a href="/dashboard" class="back">← Back to Dashboard</a>
+<div style="display:flex; gap:12px; margin-top:25px; flex-wrap:wrap;">
+    <a href="/dashboard" class="back" style="margin-top:0;">← Back to Dashboard</a>
+    <a href="{{ url_for('diabetes_history') }}" class="back" style="margin-top:0; background:linear-gradient(135deg,#0284c7,#0369a1);">🩸 View Diabetes History</a>
+</div>
 
 </div>
 

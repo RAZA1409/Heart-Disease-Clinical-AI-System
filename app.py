@@ -146,6 +146,19 @@ except Exception:
     CACHED_OPT_COMPARISON = {}
 
 # ------------------------------------------------------------
+# Load Diabetes Pipeline & Model Metadata Artifacts
+# ------------------------------------------------------------
+try:
+    diabetes_pipeline = joblib.load("models/diabetes_pipeline.pkl")
+    diabetes_feature_columns = joblib.load("models/diabetes_feature_columns.pkl")
+    diabetes_model_info = joblib.load("models/diabetes_model_info.pkl")
+except Exception as e:
+    print(f"Warning: Diabetes artifacts not fully loaded: {e}")
+    diabetes_pipeline = None
+    diabetes_feature_columns = []
+    diabetes_model_info = {}
+
+# ------------------------------------------------------------
 # Utility Functions
 # ------------------------------------------------------------
 
@@ -335,9 +348,14 @@ def dashboard():
 
     conn = get_db_connection()
     patients = conn.execute("SELECT * FROM patients").fetchall()
+    try:
+        diabetes_patients = conn.execute("SELECT * FROM diabetes_patients").fetchall()
+    except Exception:
+        diabetes_patients = []
     conn.close()
 
     total = len(patients)
+    total_diabetes = len(diabetes_patients)
 
     low = len([p for p in patients if p["risk_level"] == "LOW"])
     moderate = len([p for p in patients if p["risk_level"] == "MODERATE"])
@@ -435,7 +453,9 @@ def dashboard():
         last_timestamp=last_timestamp,
         trend_labels=trend_labels,
         trend_values=trend_values,
-        system_status=system_status
+        system_status=system_status,
+        total_diabetes=total_diabetes,
+        diabetes_model_info=diabetes_model_info
     )
 
 
@@ -847,6 +867,385 @@ def delete(patient_id):
     conn.commit()
     conn.close()
     return redirect(url_for("history"))
+
+
+# ============================================================
+# DIABETES CLINICAL AI MODULE
+# ============================================================
+
+def generate_diabetes_explanation(patient):
+    explanations = []
+    glucose = safe_float(patient.get("glucose"))
+    bmi = safe_float(patient.get("bmi"))
+    bp = safe_float(patient.get("blood_pressure"))
+    insulin = safe_float(patient.get("insulin"))
+    dpf = safe_float(patient.get("dpf"))
+
+    if glucose >= 200:
+        explanations.append("Markedly elevated plasma glucose concentration (≥200 mg/dL) indicates high risk of overt diabetes mellitus.")
+    elif glucose >= 140:
+        explanations.append("Elevated 2-hour plasma glucose (140-199 mg/dL) reflects impaired glucose tolerance (prediabetic metabolic state).")
+
+    if bmi >= 30:
+        explanations.append(f"Body Mass Index of {bmi:.1f} kg/m² indicates clinical obesity, which is strongly associated with peripheral insulin resistance.")
+    elif bmi >= 25:
+        explanations.append(f"Body Mass Index of {bmi:.1f} kg/m² reflects an overweight classification, exerting additional metabolic workload.")
+
+    if bp >= 90:
+        explanations.append("Elevated diastolic blood pressure indicates concomitant vascular and hypertensive strain.")
+
+    if insulin > 166:
+        explanations.append("Elevated postprandial serum insulin indicates compensatory hyperinsulinemia.")
+
+    if dpf >= 0.6:
+        explanations.append(f"High Diabetes Pedigree Function score ({dpf:.2f}) indicates substantial familial genetic predisposition.")
+
+    if not explanations:
+        return "All assessed clinical metabolic parameters are currently within normal baseline limits."
+
+    return " ".join(explanations)
+
+
+def generate_diabetes_recommendation(patient):
+    recommendations = []
+    glucose = safe_float(patient.get("glucose"))
+    bmi = safe_float(patient.get("bmi"))
+    bp = safe_float(patient.get("blood_pressure"))
+
+    if glucose >= 140:
+        recommendations.append("Schedule formal diagnostic testing (Fasting Plasma Glucose & Glycated Hemoglobin HbA1c) with an endocrinologist.")
+        recommendations.append("Adopt medical nutrition therapy: prioritize low glycemic index complex carbs, high fiber, and avoid refined sugars.")
+
+    if bmi >= 25:
+        recommendations.append("Target a structured 5-10% body weight reduction through 150 minutes of moderate aerobic physical activity weekly.")
+
+    if bp >= 85:
+        recommendations.append("Regularly monitor blood pressure and implement dietary sodium restriction (<2,300 mg/day).")
+
+    if not recommendations:
+        recommendations.append("Maintain a balanced nutrient-dense diet, consistent daily physical activity, and routine annual wellness checkups.")
+
+    return recommendations
+
+
+def generate_diabetes_alerts(patient):
+    alerts = []
+    glucose = safe_float(patient.get("glucose"))
+    bmi = safe_float(patient.get("bmi"))
+    bp = safe_float(patient.get("blood_pressure"))
+
+    if glucose >= 200:
+        alerts.append("🚨 Critical Blood Glucose Elevation (≥200 mg/dL)")
+    elif glucose >= 140:
+        alerts.append("⚠️ Impaired Glucose Tolerance (140-199 mg/dL)")
+
+    if bmi >= 30:
+        alerts.append("⚠️ Elevated BMI: Class I+ Obesity (≥30 kg/m²)")
+
+    if bp >= 90:
+        alerts.append("⚠️ Diastolic Hypertension (≥90 mmHg)")
+
+    return alerts
+
+
+@app.route("/diabetes_predict_page")
+@app.route("/diabetes/predict", methods=["GET"])
+def diabetes_predict_page():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    return render_template("diabetes_predict.html")
+
+
+@app.route("/diabetes/predict", methods=["POST"])
+def diabetes_predict():
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    try:
+        patient_name = request.form.get("patient_name", "").strip().title() or "Unknown"
+        age = int(float(request.form["age"]))
+        pregnancies = int(float(request.form.get("pregnancies", 0)))
+        glucose = float(request.form["glucose"])
+        blood_pressure = float(request.form["blood_pressure"])
+        skin_thickness = float(request.form.get("skin_thickness", 0))
+        insulin = float(request.form.get("insulin", 0))
+        bmi = float(request.form["bmi"])
+        dpf = float(request.form["dpf"])
+
+        if age < 1 or age > 120:
+            raise ValueError("Age must be between 1 and 120 years.")
+        if pregnancies < 0 or pregnancies > 25:
+            raise ValueError("Pregnancies must be between 0 and 25.")
+        if glucose < 0 or glucose > 500:
+            raise ValueError("Glucose must be between 0 and 500 mg/dL.")
+        if blood_pressure < 0 or blood_pressure > 300:
+            raise ValueError("Blood pressure must be between 0 and 300 mmHg.")
+        if bmi < 5 or bmi > 100:
+            raise ValueError("BMI must be between 5 and 100.")
+        if dpf < 0.0 or dpf > 5.0:
+            raise ValueError("DPF must be between 0.0 and 5.0.")
+
+    except (KeyError, ValueError, TypeError) as e:
+        return render_template("diabetes_predict.html", error=f"Invalid clinical input: {str(e)}"), 400
+
+    user_df = pd.DataFrame([{
+        "Pregnancies": pregnancies,
+        "Glucose": glucose,
+        "BloodPressure": blood_pressure,
+        "SkinThickness": skin_thickness,
+        "Insulin": insulin,
+        "BMI": bmi,
+        "DiabetesPedigreeFunction": dpf,
+        "Age": age
+    }])
+
+    probability = float(diabetes_pipeline.predict_proba(user_df)[0][1])
+    prob_percentage = round(probability * 100, 2)
+    prediction = "Present" if probability >= 0.5 else "Absent"
+    risk_level = classify_risk(prob_percentage)
+
+    # Collision-resistant unique Patient ID with human-readable timestamp and 8-hex random entropy
+    patient_id = "DPID" + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + secrets.token_hex(4).upper()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+    INSERT INTO diabetes_patients (
+        patient_id, patient_name, age, pregnancies, glucose, blood_pressure,
+        skin_thickness, insulin, bmi, dpf, result, probability, risk_level
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        patient_id, patient_name, age, pregnancies, glucose, blood_pressure,
+        skin_thickness, insulin, bmi, dpf, prediction, prob_percentage, risk_level
+    ))
+    conn.commit()
+    conn.close()
+
+    return render_template(
+        "diabetes_result.html",
+        patient_name=patient_name,
+        patient_id=patient_id,
+        probability=prob_percentage,
+        prediction=prediction,
+        risk_level=risk_level
+    )
+
+
+@app.route("/diabetes/history")
+def diabetes_history():
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+    patients = conn.execute(
+        "SELECT * FROM diabetes_patients ORDER BY timestamp DESC"
+    ).fetchall()
+    conn.close()
+
+    return render_template("diabetes_history.html", patients=patients)
+
+
+@app.route("/diabetes/patient/<patient_id>")
+def diabetes_patient_detail(patient_id):
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+    patient_row = conn.execute(
+        "SELECT * FROM diabetes_patients WHERE patient_id = ?",
+        (patient_id,)
+    ).fetchone()
+    conn.close()
+
+    if not patient_row:
+        return redirect(url_for("diabetes_history"))
+
+    patient = dict(patient_row)
+
+    glucose = safe_float(patient.get("glucose"))
+    bmi = safe_float(patient.get("bmi"))
+    bp = safe_float(patient.get("blood_pressure"))
+    insulin = safe_float(patient.get("insulin"))
+    skin = safe_float(patient.get("skin_thickness"))
+
+    # Glucose status
+    if glucose >= 200:
+        patient["glucose_status"] = "Diabetic Range (High)"
+        patient["glucose_status_class"] = "danger"
+    elif glucose >= 140:
+        patient["glucose_status"] = "Impaired / Prediabetic"
+        patient["glucose_status_class"] = "warning"
+    else:
+        patient["glucose_status"] = "Normal Range"
+        patient["glucose_status_class"] = "normal"
+
+    # BMI status
+    if bmi >= 30:
+        patient["bmi_status"] = "Obese Range (High Risk)"
+        patient["bmi_status_class"] = "danger"
+    elif bmi >= 25:
+        patient["bmi_status"] = "Overweight"
+        patient["bmi_status_class"] = "warning"
+    else:
+        patient["bmi_status"] = "Normal Healthy Range"
+        patient["bmi_status_class"] = "normal"
+
+    # BP status
+    if bp >= 90:
+        patient["bp_status"] = "Hypertension"
+        patient["bp_status_class"] = "danger"
+    elif bp >= 80:
+        patient["bp_status"] = "Prehypertension"
+        patient["bp_status_class"] = "warning"
+    else:
+        patient["bp_status"] = "Normal Range"
+        patient["bp_status_class"] = "normal"
+
+    # Insulin status
+    if insulin > 166:
+        patient["insulin_status"] = "Elevated"
+        patient["insulin_status_class"] = "warning"
+    elif insulin > 0:
+        patient["insulin_status"] = "Normal Range"
+        patient["insulin_status_class"] = "normal"
+    else:
+        patient["insulin_status"] = "Not Recorded / Zero"
+        patient["insulin_status_class"] = "normal"
+
+    # Skin thickness
+    if skin > 40:
+        patient["skin_status"] = "Elevated"
+        patient["skin_status_class"] = "warning"
+    else:
+        patient["skin_status"] = "Normal Range"
+        patient["skin_status_class"] = "normal"
+
+    # Clinical Analysis
+    patient["explanation"] = generate_diabetes_explanation(patient)
+    patient["recommendations"] = generate_diabetes_recommendation(patient)
+    patient["alerts"] = generate_diabetes_alerts(patient)
+
+    # Risk Intelligence
+    prob = safe_float(patient.get("probability"))
+    confidence = abs(prob - 50) * 2
+    patient["confidence"] = round(confidence, 1)
+
+    drivers = []
+    if glucose >= 140:
+        drivers.append("Elevated Plasma Glucose")
+    if bmi >= 28:
+        drivers.append("Elevated Body Mass Index (BMI)")
+    if safe_float(patient.get("dpf")) >= 0.5:
+        drivers.append("Elevated Genetic Pedigree Score")
+    if bp >= 85:
+        drivers.append("Elevated Blood Pressure")
+
+    patient["key_driver"] = drivers[0] if drivers else "Metabolic parameters within typical limits"
+
+    if prob >= MODERATE_RISK_THRESHOLD:
+        patient["trend"] = "High metabolic vigilance recommended"
+    elif prob >= LOW_RISK_THRESHOLD:
+        patient["trend"] = "Moderate risk zone — monitor lifestyle"
+    else:
+        patient["trend"] = "Stable metabolic indicators"
+
+    return render_template("diabetes_patient_detail.html", patient=patient)
+
+
+@app.route("/diabetes/delete/<patient_id>", methods=["POST"])
+def diabetes_delete(patient_id):
+    if "user" not in session:
+        return redirect(url_for("login"))
+    conn = get_db_connection()
+    conn.execute("DELETE FROM diabetes_patients WHERE patient_id = ?", (patient_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("diabetes_history"))
+
+
+@app.route("/diabetes/download_report/<patient_id>")
+def diabetes_download_report(patient_id):
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+    patient_row = conn.execute(
+        "SELECT * FROM diabetes_patients WHERE patient_id = ?",
+        (patient_id,)
+    ).fetchone()
+    conn.close()
+
+    if not patient_row:
+        return redirect(url_for("diabetes_history"))
+
+    patient = dict(patient_row)
+
+    buffer = BytesIO()
+    pdf = SimpleDocTemplate(buffer)
+    styles = getSampleStyleSheet()
+
+    elements = []
+    title_style = ParagraphStyle(
+        'DiabetesReportTitle',
+        parent=styles['Heading1'],
+        fontSize=16,
+        leading=20,
+        textColor=colors.HexColor('#0284c7'),
+        alignment=1
+    )
+    elements.append(Paragraph("DIABETES CLINICAL AI ASSESSMENT REPORT", title_style))
+    elements.append(Spacer(1, 8))
+
+    disclaimer_style = ParagraphStyle(
+        'DisclaimerStyle',
+        parent=styles['Normal'],
+        fontSize=8,
+        leading=11,
+        textColor=colors.HexColor('#64748b'),
+        alignment=1
+    )
+    elements.append(Paragraph("Clinical Decision Support Estimate • Not an Official Medical Diagnosis", disclaimer_style))
+    elements.append(Spacer(1, 14))
+
+    data = [
+        ["Category", "Parameter", "Clinical Value"],
+        ["Demographics", "Patient ID", str(patient.get("patient_id", ""))],
+        ["", "Patient Name", str(patient.get("patient_name", ""))],
+        ["", "Age", str(patient.get("age", "")) + " years"],
+        ["", "Pregnancies", str(patient.get("pregnancies", "0"))],
+        ["Metabolic Parameters", "Plasma Glucose (2-hr)", str(patient.get("glucose", "")) + " mg/dL"],
+        ["", "Diastolic Blood Pressure", str(patient.get("blood_pressure", "")) + " mmHg"],
+        ["", "Body Mass Index (BMI)", str(patient.get("bmi", "")) + " kg/m²"],
+        ["", "Triceps Skin Thickness", str(patient.get("skin_thickness", "")) + " mm"],
+        ["", "2-Hour Serum Insulin", str(patient.get("insulin", "")) + " mu U/ml"],
+        ["", "Diabetes Pedigree Function", str(patient.get("dpf", ""))],
+        ["AI Decision Support", "Diabetes Model Prediction", "Risk Indicated" if str(patient.get("result", "")) == "Present" else "Low Risk / Absent"],
+        ["", "Estimated Risk Probability", str(patient.get("probability", "")) + "%"],
+        ["", "Statistical Risk Tier", str(patient.get("risk_level", "")) + " (Non-Diagnostic)"],
+        ["", "Assessment Date & Time", str(patient.get("timestamp", ""))[:19]],
+    ]
+
+    table = Table(data, colWidths=[130, 180, 160])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0284c7')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f8fafc')])
+    ]))
+
+    elements.append(table)
+    pdf.build(elements)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"{patient_id}_diabetes_report.pdf",
+        mimetype='application/pdf'
+    )
 
 
 

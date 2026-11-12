@@ -23,6 +23,9 @@ database.db.bak
 records/*.pdf
 records/*.csv
 
+# Downloaded / raw datasets
+diabetes.csv
+
 # IDE & Editor Settings
 .vscode/
 .idea/
