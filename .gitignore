@@ -1,13 +1,29 @@
 # Virtual environment
 venv/
-# Python cache
-__pycache__/
-*.pyc
-# Model files
+ENV/
+env/
 
-records/*.pdf
-# Records
-records/*.csv
-# VS Code settings
-.vscode/
+# Python cache & bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# SQLite Database & Backups
+database.db
+database.db.bak
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment Variables & Secrets
 .env
+.env.local
+
+# Patient Export Records
+records/*.pdf
+records/*.csv
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp

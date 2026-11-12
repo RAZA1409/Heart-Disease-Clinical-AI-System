@@ -4,10 +4,13 @@ from werkzeug.security import generate_password_hash
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE_PATH = os.path.join(BASE_DIR, "database.db")
+DATABASE_PATH = os.getenv("DATABASE_PATH", os.path.join(BASE_DIR, "database.db"))
 
 
 def get_db_connection():
+    db_dir = os.path.dirname(DATABASE_PATH)
+    if db_dir and not os.path.exists(db_dir):
+        os.makedirs(db_dir, exist_ok=True)
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -62,7 +65,8 @@ def init_db():
     existing_admin = cursor.fetchone()
 
     if not existing_admin:
-        hashed_password = generate_password_hash("admin123")
+        default_admin_pass = os.getenv("ADMIN_DEFAULT_PASSWORD", "admin123")
+        hashed_password = generate_password_hash(default_admin_pass)
 
         cursor.execute(
             "INSERT INTO users (username, password) VALUES (?, ?)",

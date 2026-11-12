@@ -9,6 +9,7 @@ import os
 import datetime
 import webbrowser
 import sqlite3
+import secrets
 from google import genai
 from google.genai import types
 from flask import Flask, render_template, request, session, redirect, url_for
@@ -19,13 +20,13 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 from reportlab.platypus import Table, TableStyle
-from database import get_db_connection
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 from datetime import timedelta
 from flask import send_file
 from dotenv import load_dotenv
+from risk_config import classify_risk, LOW_RISK_THRESHOLD, MODERATE_RISK_THRESHOLD
 # from openai import OpenAI
 
 load_dotenv()
@@ -39,9 +40,34 @@ print("Gemini Key Found:", os.getenv("GEMINI_API_KEY") is not None)
 #     api_key=os.getenv("OPENAI_API_KEY")
 # )
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+app.secret_key = os.getenv("SECRET_KEY", "e83a42f9b8c6451e9f1a23847b2c9e54d68201fa3829471abefc918237465abc")
 
 app.permanent_session_lifetime = timedelta(days=30)
+
+def generate_csrf_token():
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_hex(32)
+    return session["csrf_token"]
+
+@app.context_processor
+def inject_csrf_token():
+    return dict(csrf_token=generate_csrf_token)
+
+@app.before_request
+def csrf_protect():
+    generate_csrf_token()
+    if request.method in ("POST", "PUT", "DELETE", "PATCH"):
+        if request.is_json:
+            token = request.headers.get("X-CSRFToken") or (request.get_json(silent=True) or {}).get("csrf_token")
+        else:
+            token = request.form.get("csrf_token")
+
+        if not token or token != session.get("csrf_token"):
+            if request.is_json:
+                return {"error": "Invalid or missing CSRF token"}, 400
+            if request.endpoint == "login":
+                return render_template("login.html", error="Session security token expired. Please try again."), 400
+            return "Security token validation failed (CSRF protection). Please refresh the page.", 400
 
 # ============================================================
 # FEATURE MAPPING (UI → MODEL)
@@ -105,7 +131,7 @@ init_db()
 # Load Model Files
 # ------------------------------------------------------------
 
-model = joblib.load("models/model.pkl")
+model = joblib.load("models/best_model.pkl")
 scaler = joblib.load("models/scaler.pkl")
 feature_columns = joblib.load("models/feature_columns.pkl")
 
@@ -253,7 +279,7 @@ def forgot_password():
 
         stored_code = os.getenv("ADMIN_RECOVERY_CODE")
 
-        if recovery_code != stored_code:
+        if not stored_code or recovery_code != stored_code:
             return render_template(
                 "forgot_password.html",
                 error="Invalid Recovery Code"
@@ -460,12 +486,8 @@ def predict():
 
     prediction = 1 if probability >= 0.5 else 0
 
-    if probability < 0.5:
-        risk_level = "LOW"
-    elif probability < 0.75:
-        risk_level = "MODERATE"
-    else:
-        risk_level = "HIGH"
+    prob_percentage = round(probability * 100, 2)
+    risk_level = classify_risk(prob_percentage)
 
     patient_id = "PID" + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
@@ -599,9 +621,9 @@ def patient_detail(patient_id):
     key_driver = drivers[0] if drivers else "No major risk detected"
 
     # Trend logic
-    if prob > 70:
+    if prob >= MODERATE_RISK_THRESHOLD:
         trend = "Risk increasing"
-    elif prob > 40:
+    elif prob >= LOW_RISK_THRESHOLD:
         trend = "Moderate risk zone"
     else:
         trend = "Stable condition"
@@ -770,6 +792,8 @@ def download_report(patient_id):
 
 @app.route("/delete/<patient_id>", methods=["POST"])
 def delete(patient_id):
+    if "user" not in session:
+        return redirect(url_for("login"))
     conn = get_db_connection()
     conn.execute("DELETE FROM patients WHERE patient_id = ?", (patient_id,))
     conn.commit()
@@ -905,9 +929,9 @@ def ai_assistant():
             else "No major rule-based risk factor detected"
         )
 
-        if probability > 70:
+        if probability >= MODERATE_RISK_THRESHOLD:
             trend = "Risk increasing"
-        elif probability > 40:
+        elif probability >= LOW_RISK_THRESHOLD:
             trend = "Moderate risk zone"
         else:
             trend = "Stable condition"
@@ -1004,49 +1028,8 @@ def ai_assistant():
 
 @app.route("/test_patient_context/<patient_id>")
 def test_patient_context(patient_id):
-
-    try:
-        conn = get_db_connection()
-
-        patient_row = conn.execute(
-            "SELECT * FROM patients WHERE patient_id = ?",
-            (patient_id,)
-        ).fetchone()
-
-        conn.close()
-
-        if not patient_row:
-            return "Patient not found", 404
-
-        patient = dict(patient_row)
-
-        return f"""
-        <h2>AI Patient Context Test</h2>
-
-        <h3>Patient</h3>
-        Patient ID: {patient.get('patient_id')}<br>
-        Name: {patient.get('patient_name')}<br>
-        Age: {patient.get('age')}<br>
-        Sex: {patient.get('sex')}<br>
-
-        <h3>Clinical Parameters</h3>
-        Blood Pressure: {patient.get('trestbps')}<br>
-        Cholesterol: {patient.get('chol')}<br>
-        Maximum Heart Rate: {patient.get('thalach')}<br>
-        ST Depression: {patient.get('oldpeak')}<br>
-        Vessels: {patient.get('ca')}<br>
-
-        <h3>Prediction</h3>
-        Prediction: {patient.get('result')}<br>
-        Probability: {patient.get('probability')}%<br>
-        Risk Level: {patient.get('risk_level')}<br>
-        """
-
-    except Exception as e:
-
-        print("Context Test Error:", e)
-
-        return f"Error: {str(e)}", 500
+    # Endpoint disabled for patient data security and privacy compliance
+    return "Endpoint disabled for security reasons", 404
 
 
 

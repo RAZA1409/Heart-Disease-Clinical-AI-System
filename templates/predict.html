@@ -13,6 +13,7 @@
     <h1 style="color:#315c6e;">🫀 Heart Disease Clinical Assessment</h1>
 
     <form method="POST" action="/predict">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <h3 style="margin-top:25px;">Patient Information</h3>
 

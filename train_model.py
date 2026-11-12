@@ -134,8 +134,10 @@ grid_test_accuracy = accuracy_score(y_test, grid_best.predict(X_test_scaled))
 print("Best Grid Parameters:", grid.best_params_)
 print("Grid Search Test Accuracy:", round(grid_test_accuracy * 100, 2), "%")
 
-
-
+comparison = {
+    "GA": ga_test_accuracy,
+    "Grid": grid_test_accuracy
+}
 
 joblib.dump(comparison, "models/optimization_comparison.pkl")
 # ============================================================

@@ -235,6 +235,7 @@ opacity:0.7;
 <div class="subtitle">Doctor Authentication Portal</div>
 
 <form method="POST" onsubmit="showLoading()">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
 <div class="input-group">
 <input type="text" name="username" required placeholder=" " 

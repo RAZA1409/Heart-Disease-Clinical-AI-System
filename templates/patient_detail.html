@@ -1024,17 +1024,17 @@ async function sendAIMessage() {
         console.log("AI request sent");
 
         const response = await fetch("/ai_assistant", {
-            
-            
             method: "POST",
 
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
             },
 
             body: JSON.stringify({
                 message: message,
-                patient_id: patientId
+                patient_id: patientId,
+                csrf_token: csrfToken
             })
             
         });
@@ -1105,6 +1105,7 @@ async function sendAIMessage() {
 
 }
 const patientId = "{{ patient['patient_id'] }}";
+const csrfToken = "{{ csrf_token() }}";
 const probability = {{ patient["probability"] }};
 
 /* DONUT */

@@ -206,7 +206,8 @@ box-shadow: 0 0 8px #38bdf8;
 <td>{{ p.timestamp }}</td>
 
 <td>
-<form method="POST" action="/delete/{{ p.patient_id }}" onsubmit="event.stopPropagation();">
+<form method="POST" action="/delete/{{ p.patient_id }}" onsubmit="event.stopPropagation(); return confirm('Are you sure you want to permanently delete this patient record?');">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <button type="submit" class="delete-btn" onclick="event.stopPropagation();">
 Delete
 </button>
