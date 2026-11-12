@@ -26,6 +26,10 @@ records/*.csv
 # Downloaded / raw datasets
 diabetes.csv
 
+# Temporary model candidate and backup artifacts
+models/*backup.pkl
+models/*candidate.pkl
+
 # IDE & Editor Settings
 .vscode/
 .idea/
