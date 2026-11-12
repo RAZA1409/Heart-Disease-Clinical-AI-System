@@ -64,6 +64,7 @@ transition:.3s;
 
 .btn-primary{background:#2563eb;}
 .btn-diabetes{background:linear-gradient(135deg,#0284c7,#0369a1);}
+.btn-cancer{background:linear-gradient(135deg,#ec4899,#be185d);}
 .btn-light{background:rgba(255,255,255,0.15);}
 .btn-danger{background:#ef4444;}
 
@@ -245,6 +246,7 @@ canvas{max-height:280px}
 <div class="actions">
 <a href="{{ url_for('predict_page') }}" class="btn btn-primary">🫀 Heart Assessment</a>
 <a href="{{ url_for('diabetes_predict_page') }}" class="btn btn-diabetes">🩸 Diabetes Assessment</a>
+<a href="{{ url_for('breast_cancer_predict_page') }}" class="btn btn-cancer">🎗️ Breast Cancer Assessment</a>
 <a href="{{ url_for('change_password') }}" class="btn btn-light">Change Password</a>
 <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
 </div>
@@ -270,6 +272,16 @@ canvas{max-height:280px}
         <div class="module-btn-group">
             <a href="{{ url_for('diabetes_predict_page') }}" class="btn btn-diabetes" style="padding: 6px 12px; font-size: 12px;">+ Assess</a>
             <a href="{{ url_for('diabetes_history') }}" class="btn btn-light" style="padding: 6px 12px; font-size: 12px;">📁 History</a>
+        </div>
+    </div>
+    <div class="module-card">
+        <div class="module-info">
+            <h3>🎗️ Breast Cancer Cytology Module</h3>
+            <p>{{ total_breast_cancer }} assessed patients • Model: SVM RBF ({{ breast_cancer_accuracy }}%)</p>
+        </div>
+        <div class="module-btn-group">
+            <a href="{{ url_for('breast_cancer_predict_page') }}" class="btn btn-cancer" style="padding: 6px 12px; font-size: 12px;">+ Assess</a>
+            <a href="{{ url_for('breast_cancer_history') }}" class="btn btn-light" style="padding: 6px 12px; font-size: 12px;">📁 History</a>
         </div>
     </div>
 </div>

@@ -77,6 +77,50 @@ def init_db():
         )
     """)
 
+    # BREAST CANCER PATIENTS TABLE (WDBC Diagnostic)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS breast_cancer_patients (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            patient_id TEXT,
+            patient_name TEXT,
+            age INTEGER,
+            mean_radius REAL,
+            mean_texture REAL,
+            mean_perimeter REAL,
+            mean_area REAL,
+            mean_smoothness REAL,
+            mean_compactness REAL,
+            mean_concavity REAL,
+            mean_concave_points REAL,
+            mean_symmetry REAL,
+            mean_fractal_dimension REAL,
+            radius_error REAL,
+            texture_error REAL,
+            perimeter_error REAL,
+            area_error REAL,
+            smoothness_error REAL,
+            compactness_error REAL,
+            concavity_error REAL,
+            concave_points_error REAL,
+            symmetry_error REAL,
+            fractal_dimension_error REAL,
+            worst_radius REAL,
+            worst_texture REAL,
+            worst_perimeter REAL,
+            worst_area REAL,
+            worst_smoothness REAL,
+            worst_compactness REAL,
+            worst_concavity REAL,
+            worst_concave_points REAL,
+            worst_symmetry REAL,
+            worst_fractal_dimension REAL,
+            result TEXT,
+            probability REAL,
+            risk_level TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     # Create default admin ONLY if it doesn't already exist
     cursor.execute(
         "SELECT id FROM users WHERE username = ?",

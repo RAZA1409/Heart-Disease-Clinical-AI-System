@@ -25,6 +25,9 @@ records/*.csv
 
 # Downloaded / raw datasets
 diabetes.csv
+breast_cancer.csv
+wdbc.data
+wdbc.names
 
 # Temporary model candidate and backup artifacts
 models/*backup.pkl

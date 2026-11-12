@@ -159,6 +159,19 @@ except Exception as e:
     diabetes_model_info = {}
 
 # ------------------------------------------------------------
+# Load Breast Cancer Pipeline & Model Metadata Artifacts
+# ------------------------------------------------------------
+try:
+    breast_cancer_pipeline = joblib.load("models/breast_cancer_pipeline.pkl")
+    breast_cancer_feature_columns = joblib.load("models/breast_cancer_feature_columns.pkl")
+    breast_cancer_model_info = joblib.load("models/breast_cancer_model_info.pkl")
+except Exception as e:
+    print(f"Warning: Breast Cancer artifacts not fully loaded: {e}")
+    breast_cancer_pipeline = None
+    breast_cancer_feature_columns = []
+    breast_cancer_model_info = {}
+
+# ------------------------------------------------------------
 # Utility Functions
 # ------------------------------------------------------------
 
@@ -352,10 +365,16 @@ def dashboard():
         diabetes_patients = conn.execute("SELECT * FROM diabetes_patients").fetchall()
     except Exception:
         diabetes_patients = []
+    try:
+        breast_cancer_patients = conn.execute("SELECT * FROM breast_cancer_patients").fetchall()
+    except Exception:
+        breast_cancer_patients = []
     conn.close()
 
     total = len(patients)
     total_diabetes = len(diabetes_patients)
+    total_breast_cancer = len(breast_cancer_patients)
+    breast_cancer_accuracy = round(breast_cancer_model_info.get("accuracy", 0.9825) * 100, 2)
 
     low = len([p for p in patients if p["risk_level"] == "LOW"])
     moderate = len([p for p in patients if p["risk_level"] == "MODERATE"])
@@ -455,7 +474,10 @@ def dashboard():
         trend_values=trend_values,
         system_status=system_status,
         total_diabetes=total_diabetes,
-        diabetes_model_info=diabetes_model_info
+        diabetes_model_info=diabetes_model_info,
+        total_breast_cancer=total_breast_cancer,
+        breast_cancer_model_info=breast_cancer_model_info,
+        breast_cancer_accuracy=breast_cancer_accuracy
     )
 
 
@@ -677,7 +699,7 @@ def patient_detail(patient_id):
         patient["cp_text"] = patient.get("cp")
 
     return render_template("patient_detail.html", patient=patient)
-    
+
 
 def generate_explanation(patient):
 
@@ -1248,6 +1270,394 @@ def diabetes_download_report(patient_id):
     )
 
 
+# ============================================================
+# 🎗️ BREAST CANCER CYTOLOGY MODULE (WDBC)
+# ============================================================
+
+def generate_breast_cancer_explanation(patient):
+    explanations = []
+    mean_radius = safe_float(patient.get("mean_radius"))
+    mean_concavity = safe_float(patient.get("mean_concavity"))
+    mean_concave_points = safe_float(patient.get("mean_concave_points"))
+    mean_area = safe_float(patient.get("mean_area"))
+    worst_concave_points = safe_float(patient.get("worst_concave_points"))
+    worst_area = safe_float(patient.get("worst_area"))
+    prob = safe_float(patient.get("probability"))
+
+    if prob >= 50.0:
+        explanations.append(f"SVM model inference indicates a high statistical probability of cytological malignancy ({prob:.1f}%).")
+    else:
+        explanations.append(f"SVM model inference indicates predominantly benign cytological characteristics (estimated malignancy probability {prob:.1f}%).")
+
+    if mean_concave_points >= 0.05 or worst_concave_points >= 0.12:
+        explanations.append(f"Elevated nuclear concave points ({mean_concave_points:.4f}) denote structural membrane indentations strongly correlated with malignant cellular morphology.")
+
+    if mean_concavity >= 0.10:
+        explanations.append(f"Elevated nuclear concavity ({mean_concavity:.4f}) reflects marked contour infolding in the aspirate cell nuclei.")
+
+    if mean_area >= 700.0 or worst_area >= 1000.0:
+        explanations.append(f"Nuclear hypertrophy detected with mean area of {mean_area:.1f} µm² (worst-case {worst_area:.1f} µm²), suggesting marked cellular pleomorphism.")
+
+    if len(explanations) <= 1:
+        explanations.append("Nuclear size, contour regularity, and chromatin texture distribution align closely with typical benign breast tissue aspirates.")
+
+    return " ".join(explanations)
+
+
+def generate_breast_cancer_recommendations(patient):
+    recommendations = []
+    prob = safe_float(patient.get("probability"))
+    result = str(patient.get("result", ""))
+
+    if prob >= 50.0 or result == "Malignant":
+        recommendations.append("Urgent referral to a multidisciplinary breast surgical oncology clinic for comprehensive evaluation.")
+        recommendations.append("Perform image-guided Core Needle Biopsy (CNB) for definitive histological grading, ER/PR, and HER2 receptor status.")
+        recommendations.append("Schedule diagnostic bilateral mammography with digital tomosynthesis and targeted breast ultrasonography.")
+        recommendations.append("Consider contrast-enhanced breast MRI if multifocal disease or dense fibroglandular tissue is suspected.")
+    elif prob >= 25.0:
+        recommendations.append("Schedule short-interval diagnostic follow-up imaging (BI-RADS 3 protocol) in 3 to 6 months.")
+        recommendations.append("Conduct a comprehensive clinical breast examination by a qualified breast specialist.")
+        recommendations.append("Consider histological core biopsy if palpable lesion or interval progression is noted.")
+    else:
+        recommendations.append("Continue routine annual screening mammography as recommended for age and clinical risk profile.")
+        recommendations.append("Encourage monthly breast self-awareness and report any palpable changes, skin changes, or discharge promptly.")
+        recommendations.append("Maintain periodic clinical breast examination during routine annual wellness visits.")
+
+    return recommendations
+
+
+def generate_breast_cancer_alerts(patient):
+    alerts = []
+    prob = safe_float(patient.get("probability"))
+    result = str(patient.get("result", ""))
+    mean_concave_points = safe_float(patient.get("mean_concave_points"))
+    mean_concavity = safe_float(patient.get("mean_concavity"))
+    mean_area = safe_float(patient.get("mean_area"))
+    worst_perimeter = safe_float(patient.get("worst_perimeter"))
+
+    if prob >= 70.0 or result == "Malignant":
+        alerts.append("🚨 High Cytological Suspicion for Breast Carcinoma")
+
+    if mean_concave_points >= 0.08:
+        alerts.append(f"⚠️ Marked Nuclear Concave Point Severity ({mean_concave_points:.4f})")
+
+    if mean_concavity >= 0.15:
+        alerts.append(f"⚠️ Pronounced Nuclear Infolding / Concavity ({mean_concavity:.4f})")
+
+    if mean_area >= 900.0:
+        alerts.append(f"⚠️ Marked Nuclear Area Expansion ({mean_area:.1f} µm²)")
+
+    if worst_perimeter >= 130.0:
+        alerts.append(f"⚠️ Extreme Perimeter Dysmorphism in Worst-Region Analysis ({worst_perimeter:.1f})")
+
+    return alerts
+
+
+@app.route("/breast_cancer_predict_page")
+@app.route("/breast_cancer/predict", methods=["GET"])
+def breast_cancer_predict_page():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    return render_template("breast_cancer_predict.html")
+
+
+@app.route("/breast_cancer/predict", methods=["POST"])
+def breast_cancer_predict():
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    try:
+        patient_name = request.form.get("patient_name", "").strip().title() or "Unknown"
+        age = int(float(request.form["age"]))
+        if age < 1 or age > 120:
+            raise ValueError("Age must be between 1 and 120 years.")
+
+        feature_values = {}
+        for col in breast_cancer_feature_columns:
+            val_str = request.form.get(col)
+            if val_str is None or val_str.strip() == "":
+                raise ValueError(f"Missing required cytology feature: {col}")
+            val = float(val_str)
+            if val < 0.0:
+                raise ValueError(f"Cytology feature '{col}' cannot be negative.")
+            feature_values[col] = val
+
+    except (KeyError, ValueError, TypeError) as e:
+        return render_template("breast_cancer_predict.html", error=f"Invalid clinical input: {str(e)}"), 400
+
+    user_df = pd.DataFrame([feature_values])[breast_cancer_feature_columns]
+
+    pos_idx = list(breast_cancer_pipeline.classes_).index(1)
+    prob_malignant = float(breast_cancer_pipeline.predict_proba(user_df)[0][pos_idx])
+    prob_percentage = round(prob_malignant * 100, 2)
+    prediction = "Malignant" if prob_malignant >= 0.5 else "Benign"
+    risk_level = classify_risk(prob_percentage)
+
+    # Collision-resistant unique Patient ID with human-readable timestamp and 8-hex random entropy
+    patient_id = "BCP" + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + secrets.token_hex(4).upper()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    col_names = ["patient_id", "patient_name", "age"] + breast_cancer_feature_columns + ["result", "probability", "risk_level"]
+    placeholders = ", ".join(["?"] * len(col_names))
+    sql_cols = ", ".join(col_names)
+    val_list = [patient_id, patient_name, age] + [feature_values[c] for c in breast_cancer_feature_columns] + [prediction, prob_percentage, risk_level]
+
+    cursor.execute(f"INSERT INTO breast_cancer_patients ({sql_cols}) VALUES ({placeholders})", val_list)
+    conn.commit()
+    conn.close()
+
+    return render_template(
+        "breast_cancer_result.html",
+        patient_name=patient_name,
+        patient_id=patient_id,
+        probability=prob_percentage,
+        prediction=prediction,
+        risk_level=risk_level
+    )
+
+
+@app.route("/breast_cancer/history")
+def breast_cancer_history():
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+    patients = conn.execute(
+        "SELECT * FROM breast_cancer_patients ORDER BY timestamp DESC"
+    ).fetchall()
+    conn.close()
+
+    return render_template("breast_cancer_history.html", patients=patients)
+
+
+@app.route("/breast_cancer/patient/<patient_id>")
+def breast_cancer_patient_detail(patient_id):
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+    patient_row = conn.execute(
+        "SELECT * FROM breast_cancer_patients WHERE patient_id = ?",
+        (patient_id,)
+    ).fetchone()
+    conn.close()
+
+    if not patient_row:
+        return redirect(url_for("breast_cancer_history"))
+
+    patient = dict(patient_row)
+
+    mean_radius = safe_float(patient.get("mean_radius"))
+    mean_texture = safe_float(patient.get("mean_texture"))
+    mean_perimeter = safe_float(patient.get("mean_perimeter"))
+    mean_area = safe_float(patient.get("mean_area"))
+    mean_concavity = safe_float(patient.get("mean_concavity"))
+    mean_concave_points = safe_float(patient.get("mean_concave_points"))
+
+    # Radius
+    if mean_radius >= 17.0:
+        patient["radius_status"] = "Marked Enlargement"
+        patient["radius_status_class"] = "danger"
+    elif mean_radius >= 14.5:
+        patient["radius_status"] = "Moderate Atypia"
+        patient["radius_status_class"] = "warning"
+    else:
+        patient["radius_status"] = "Normal Range"
+        patient["radius_status_class"] = "normal"
+
+    # Texture
+    if mean_texture >= 22.0:
+        patient["texture_status"] = "High Heterogeneity"
+        patient["texture_status_class"] = "danger"
+    elif mean_texture >= 19.0:
+        patient["texture_status"] = "Borderline Coarse"
+        patient["texture_status_class"] = "warning"
+    else:
+        patient["texture_status"] = "Homogeneous"
+        patient["texture_status_class"] = "normal"
+
+    # Perimeter
+    if mean_perimeter >= 110.0:
+        patient["perimeter_status"] = "Enlarged Perimeter"
+        patient["perimeter_status_class"] = "danger"
+    elif mean_perimeter >= 95.0:
+        patient["perimeter_status"] = "Atypical Expansion"
+        patient["perimeter_status_class"] = "warning"
+    else:
+        patient["perimeter_status"] = "Normal Perimeter"
+        patient["perimeter_status_class"] = "normal"
+
+    # Area
+    if mean_area >= 900.0:
+        patient["area_status"] = "Marked Expansion"
+        patient["area_status_class"] = "danger"
+    elif mean_area >= 650.0:
+        patient["area_status"] = "Moderate Expansion"
+        patient["area_status_class"] = "warning"
+    else:
+        patient["area_status"] = "Normal Area"
+        patient["area_status_class"] = "normal"
+
+    # Concavity
+    if mean_concavity >= 0.15:
+        patient["concavity_status"] = "Severe Infolding"
+        patient["concavity_status_class"] = "danger"
+    elif mean_concavity >= 0.08:
+        patient["concavity_status"] = "Moderate Indentation"
+        patient["concavity_status_class"] = "warning"
+    else:
+        patient["concavity_status"] = "Smooth Contour"
+        patient["concavity_status_class"] = "normal"
+
+    # Concave Points
+    if mean_concave_points >= 0.08:
+        patient["concave_points_status"] = "High Concave Severity"
+        patient["concave_points_status_class"] = "danger"
+    elif mean_concave_points >= 0.04:
+        patient["concave_points_status"] = "Moderate Concavities"
+        patient["concave_points_status_class"] = "warning"
+    else:
+        patient["concave_points_status"] = "Normal Contour"
+        patient["concave_points_status_class"] = "normal"
+
+    # Explanations, Recommendations, Alerts
+    patient["explanation"] = generate_breast_cancer_explanation(patient)
+    patient["recommendations"] = generate_breast_cancer_recommendations(patient)
+    patient["alerts"] = generate_breast_cancer_alerts(patient)
+
+    # Risk Intelligence
+    prob = safe_float(patient.get("probability"))
+    confidence = abs(prob - 50.0) * 2.0
+    patient["confidence"] = round(confidence, 1)
+
+    drivers = []
+    if mean_concave_points >= 0.05:
+        drivers.append("Nuclear Contour Indentation (Concave Points)")
+    if mean_concavity >= 0.10:
+        drivers.append("Nuclear Infolding Severity (Concavity)")
+    if mean_area >= 700.0:
+        drivers.append("Nuclear Area Hypertrophy")
+    if mean_radius >= 15.0:
+        drivers.append("Nuclear Radius Pleomorphism")
+    if mean_texture >= 20.0:
+        drivers.append("Chromatin Texture Heterogeneity")
+
+    patient["key_driver"] = drivers[0] if drivers else "Nuclear morphometric measurements within benign baseline"
+
+    if prob >= MODERATE_RISK_THRESHOLD:
+        patient["trend"] = "High cytopathological vigilance; urgent biopsy indicated"
+    elif prob >= LOW_RISK_THRESHOLD:
+        patient["trend"] = "Intermediate atypia; short-interval follow-up recommended"
+    else:
+        patient["trend"] = "Consistent with stable benign cytological morphometry"
+
+    return render_template("breast_cancer_patient_detail.html", patient=patient)
+
+
+@app.route("/breast_cancer/delete/<patient_id>", methods=["POST"])
+def breast_cancer_delete(patient_id):
+    if "user" not in session:
+        return redirect(url_for("login"))
+    conn = get_db_connection()
+    conn.execute("DELETE FROM breast_cancer_patients WHERE patient_id = ?", (patient_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("breast_cancer_history"))
+
+
+@app.route("/breast_cancer/download_report/<patient_id>")
+def breast_cancer_download_report(patient_id):
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+    patient_row = conn.execute(
+        "SELECT * FROM breast_cancer_patients WHERE patient_id = ?",
+        (patient_id,)
+    ).fetchone()
+    conn.close()
+
+    if not patient_row:
+        return redirect(url_for("breast_cancer_history"))
+
+    patient = dict(patient_row)
+
+    buffer = BytesIO()
+    pdf = SimpleDocTemplate(buffer)
+    styles = getSampleStyleSheet()
+
+    elements = []
+    title_style = ParagraphStyle(
+        'CancerReportTitle',
+        parent=styles['Heading1'],
+        fontSize=16,
+        leading=20,
+        textColor=colors.HexColor('#ec4899'),
+        alignment=1
+    )
+    elements.append(Paragraph("BREAST CANCER CYTOLOGY AI ASSESSMENT REPORT", title_style))
+    elements.append(Spacer(1, 8))
+
+    disclaimer_style = ParagraphStyle(
+        'CancerDisclaimerStyle',
+        parent=styles['Normal'],
+        fontSize=8,
+        leading=11,
+        textColor=colors.HexColor('#64748b'),
+        alignment=1
+    )
+    elements.append(Paragraph("Clinical Decision Support Estimate • Not an Official Medical Diagnosis", disclaimer_style))
+    elements.append(Spacer(1, 14))
+
+    data = [
+        ["Category", "Parameter / Cytology Feature", "Clinical Value"],
+        ["Demographics", "Patient ID", str(patient.get("patient_id", ""))],
+        ["", "Patient Name", str(patient.get("patient_name", ""))],
+        ["", "Age", str(patient.get("age", "")) + " years"],
+        ["Mean Morphometry", "Mean Radius", f"{safe_float(patient.get('mean_radius')):.3f}"],
+        ["", "Mean Texture", f"{safe_float(patient.get('mean_texture')):.3f}"],
+        ["", "Mean Perimeter", f"{safe_float(patient.get('mean_perimeter')):.2f}"],
+        ["", "Mean Area", f"{safe_float(patient.get('mean_area')):.1f} µm²"],
+        ["", "Mean Smoothness", f"{safe_float(patient.get('mean_smoothness')):.5f}"],
+        ["", "Mean Compactness", f"{safe_float(patient.get('mean_compactness')):.5f}"],
+        ["", "Mean Concavity", f"{safe_float(patient.get('mean_concavity')):.5f}"],
+        ["", "Mean Concave Points", f"{safe_float(patient.get('mean_concave_points')):.5f}"],
+        ["", "Mean Symmetry", f"{safe_float(patient.get('mean_symmetry')):.4f}"],
+        ["Extreme (Worst)", "Worst Radius", f"{safe_float(patient.get('worst_radius')):.3f}"],
+        ["", "Worst Perimeter", f"{safe_float(patient.get('worst_perimeter')):.2f}"],
+        ["", "Worst Area", f"{safe_float(patient.get('worst_area')):.1f} µm²"],
+        ["", "Worst Concave Points", f"{safe_float(patient.get('worst_concave_points')):.5f}"],
+        ["AI Decision Support", "Cytological Classification", "Malignancy Indicated" if str(patient.get("result", "")) == "Malignant" else "Benign Cytology Indicated"],
+        ["", "Estimated Malignancy Probability", f"{patient.get('probability', '')}%"],
+        ["", "Statistical Risk Tier", f"{patient.get('risk_level', '')} (Non-Diagnostic)"],
+        ["", "Assessment Date & Time", str(patient.get("timestamp", ""))[:19]],
+    ]
+
+    table = Table(data, colWidths=[130, 180, 160])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#ec4899')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#fdf2f8')])
+    ]))
+
+    elements.append(table)
+    pdf.build(elements)
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name=f"{patient_id}_breast_cancer_report.pdf",
+        mimetype='application/pdf'
+    )
+
+
 
 # ------------------------------------------------------------
 # 🤖 AI CLINICAL ASSISTANT
@@ -1469,7 +1879,7 @@ def ai_assistant():
         return {
             "reply": f"AI Error: {str(e)}"
         }, 500
-    
+
 
 
 
@@ -1505,7 +1915,7 @@ def test_patient_context(patient_id):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-    
+
 
 # if __name__ == "__main__":
 #     webbrowser.open("http://127.0.0.1:5000/login")

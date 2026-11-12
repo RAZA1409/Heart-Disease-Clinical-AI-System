@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Breast Cancer Clinical AI Assessment | Multi-Disease Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body {
+            background: linear-gradient(135deg, #020617, #0f172a, #1e293b);
+            color: white;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 22px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .back-link {
+            color: #ec4899;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        .back-link:hover { text-decoration: underline; }
+        .preset-btn {
+            background: rgba(236, 72, 153, 0.15);
+            border: 1px solid rgba(236, 72, 153, 0.4);
+            color: #f472b6;
+            padding: 6px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: 8px;
+            transition: 0.2s;
+        }
+        .preset-btn:hover {
+            background: rgba(236, 72, 153, 0.3);
+            transform: translateY(-1px);
+        }
+        h1 {
+            font-size: 26px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+        .subtitle {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 25px;
+        }
+        .disclaimer-banner {
+            background: rgba(236, 72, 153, 0.1);
+            border-left: 4px solid #ec4899;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #cbd5e1;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #f472b6;
+            margin: 25px 0 15px 0;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 16px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #cbd5e1;
+            margin-bottom: 4px;
+        }
+        input {
+            padding: 9px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            outline: none;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        input:focus {
+            border-color: #ec4899;
+            box-shadow: 0 0 10px rgba(236, 72, 153, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .submit-btn {
+            margin-top: 35px;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 10px 25px rgba(236, 72, 153, 0.3);
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(236, 72, 153, 0.4);
+        }
+        .error-box {
+            background: rgba(239, 68, 68, 0.2);
+            border-left: 4px solid #ef4444;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: #fca5a5;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="top-nav">
+        <a href="{{ url_for('dashboard') }}" class="back-link">← Back to Clinical Dashboard</a>
+        <div>
+            <button type="button" class="preset-btn" onclick="loadSample('benign')">Load Sample: Benign</button>
+            <button type="button" class="preset-btn" onclick="loadSample('malignant')">Load Sample: Malignant</button>
+        </div>
+    </div>
+
+    <h1>🎗️ Breast Cancer Cytology AI Assessment</h1>
+    <div class="subtitle">Wisconsin Diagnostic Breast Cancer (WDBC) • Fine Needle Aspirate (FNA) Feature Analysis</div>
+
+    <div class="disclaimer-banner">
+        ⚕️ <strong>Clinical Decision Support Disclaimer:</strong> This computational tool estimates statistical malignancy probability derived from digitized cell nuclear features. It is designed for educational screening and decision support only, <strong>not</strong> an official histopathological diagnosis. Biopsy confirmation by a licensed pathologist is mandatory.
+    </div>
+
+    {% if error %}
+    <div class="error-box">
+        ⚠️ {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="{{ url_for('breast_cancer_predict') }}" id="bcForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- PATIENT DEMOGRAPHICS -->
+        <div class="section-title">👤 Patient Identification</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Patient Full Name</label>
+                <input type="text" name="patient_name" id="patient_name" placeholder="e.g. Jane Doe" required>
+            </div>
+            <div class="form-group">
+                <label>Age (years)</label>
+                <input type="number" name="age" id="age" min="1" max="120" placeholder="e.g. 52" required>
+            </div>
+        </div>
+
+        <!-- 1. MEAN NUCLEAR CHARACTERISTICS -->
+        <div class="section-title">🔬 1. Mean Nuclear Characteristics</div>
+        <div class="form-grid">
+            <div class="form-group"><label>Mean Radius</label><input type="number" step="any" name="mean_radius" id="mean_radius" required></div>
+            <div class="form-group"><label>Mean Texture</label><input type="number" step="any" name="mean_texture" id="mean_texture" required></div>
+            <div class="form-group"><label>Mean Perimeter</label><input type="number" step="any" name="mean_perimeter" id="mean_perimeter" required></div>
+            <div class="form-group"><label>Mean Area</label><input type="number" step="any" name="mean_area" id="mean_area" required></div>
+            <div class="form-group"><label>Mean Smoothness</label><input type="number" step="any" name="mean_smoothness" id="mean_smoothness" required></div>
+            <div class="form-group"><label>Mean Compactness</label><input type="number" step="any" name="mean_compactness" id="mean_compactness" required></div>
+            <div class="form-group"><label>Mean Concavity</label><input type="number" step="any" name="mean_concavity" id="mean_concavity" required></div>
+            <div class="form-group"><label>Mean Concave Points</label><input type="number" step="any" name="mean_concave_points" id="mean_concave_points" required></div>
+            <div class="form-group"><label>Mean Symmetry</label><input type="number" step="any" name="mean_symmetry" id="mean_symmetry" required></div>
+            <div class="form-group"><label>Mean Fractal Dimension</label><input type="number" step="any" name="mean_fractal_dimension" id="mean_fractal_dimension" required></div>
+        </div>
+
+        <!-- 2. STANDARD ERROR (SE) OF MEASUREMENTS -->
+        <div class="section-title">📐 2. Nuclear Measurement Standard Errors (SE)</div>
+        <div class="form-grid">
+            <div class="form-group"><label>Radius SE</label><input type="number" step="any" name="radius_error" id="radius_error" required></div>
+            <div class="form-group"><label>Texture SE</label><input type="number" step="any" name="texture_error" id="texture_error" required></div>
+            <div class="form-group"><label>Perimeter SE</label><input type="number" step="any" name="perimeter_error" id="perimeter_error" required></div>
+            <div class="form-group"><label>Area SE</label><input type="number" step="any" name="area_error" id="area_error" required></div>
+            <div class="form-group"><label>Smoothness SE</label><input type="number" step="any" name="smoothness_error" id="smoothness_error" required></div>
+            <div class="form-group"><label>Compactness SE</label><input type="number" step="any" name="compactness_error" id="compactness_error" required></div>
+            <div class="form-group"><label>Concavity SE</label><input type="number" step="any" name="concavity_error" id="concavity_error" required></div>
+            <div class="form-group"><label>Concave Points SE</label><input type="number" step="any" name="concave_points_error" id="concave_points_error" required></div>
+            <div class="form-group"><label>Symmetry SE</label><input type="number" step="any" name="symmetry_error" id="symmetry_error" required></div>
+            <div class="form-group"><label>Fractal Dimension SE</label><input type="number" step="any" name="fractal_dimension_error" id="fractal_dimension_error" required></div>
+        </div>
+
+        <!-- 3. WORST / EXTREME VALUES -->
+        <div class="section-title">⚡ 3. Worst / Extreme Nuclear Characteristics</div>
+        <div class="form-grid">
+            <div class="form-group"><label>Worst Radius</label><input type="number" step="any" name="worst_radius" id="worst_radius" required></div>
+            <div class="form-group"><label>Worst Texture</label><input type="number" step="any" name="worst_texture" id="worst_texture" required></div>
+            <div class="form-group"><label>Worst Perimeter</label><input type="number" step="any" name="worst_perimeter" id="worst_perimeter" required></div>
+            <div class="form-group"><label>Worst Area</label><input type="number" step="any" name="worst_area" id="worst_area" required></div>
+            <div class="form-group"><label>Worst Smoothness</label><input type="number" step="any" name="worst_smoothness" id="worst_smoothness" required></div>
+            <div class="form-group"><label>Worst Compactness</label><input type="number" step="any" name="worst_compactness" id="worst_compactness" required></div>
+            <div class="form-group"><label>Worst Concavity</label><input type="number" step="any" name="worst_concavity" id="worst_concavity" required></div>
+            <div class="form-group"><label>Worst Concave Points</label><input type="number" step="any" name="worst_concave_points" id="worst_concave_points" required></div>
+            <div class="form-group"><label>Worst Symmetry</label><input type="number" step="any" name="worst_symmetry" id="worst_symmetry" required></div>
+            <div class="form-group"><label>Worst Fractal Dimension</label><input type="number" step="any" name="worst_fractal_dimension" id="worst_fractal_dimension" required></div>
+        </div>
+
+        <button type="submit" class="submit-btn">Evaluate Cytological Malignancy Risk</button>
+    </form>
+</div>
+
+<script>
+const samples = {
+    benign: {
+        patient_name: "Eleanor Vance", age: 44,
+        mean_radius: 13.54, mean_texture: 14.36, mean_perimeter: 87.46, mean_area: 566.3, mean_smoothness: 0.09779,
+        mean_compactness: 0.08129, mean_concavity: 0.06664, mean_concave_points: 0.04781, mean_symmetry: 0.1885, mean_fractal_dimension: 0.05766,
+        radius_error: 0.2699, texture_error: 0.7886, perimeter_error: 2.058, area_error: 23.56, smoothness_error: 0.008462,
+        compactness_error: 0.0146, concavity_error: 0.02387, concave_points_error: 0.01315, symmetry_error: 0.0198, fractal_dimension_error: 0.0023,
+        worst_radius: 15.11, worst_texture: 19.26, worst_perimeter: 99.7, worst_area: 711.2, worst_smoothness: 0.144,
+        worst_compactness: 0.1773, worst_concavity: 0.239, worst_concave_points: 0.1288, worst_symmetry: 0.2977, worst_fractal_dimension: 0.07259
+    },
+    malignant: {
+        patient_name: "Clara Oswald", age: 58,
+        mean_radius: 17.99, mean_texture: 10.38, mean_perimeter: 122.8, mean_area: 1001.0, mean_smoothness: 0.1184,
+        mean_compactness: 0.2776, mean_concavity: 0.3001, mean_concave_points: 0.1471, mean_symmetry: 0.2419, mean_fractal_dimension: 0.07871,
+        radius_error: 1.095, texture_error: 0.9053, perimeter_error: 8.589, area_error: 153.4, smoothness_error: 0.006399,
+        compactness_error: 0.04904, concavity_error: 0.05373, concave_points_error: 0.01587, symmetry_error: 0.03003, fractal_dimension_error: 0.006193,
+        worst_radius: 25.38, worst_texture: 17.33, worst_perimeter: 184.6, worst_area: 2019.0, worst_smoothness: 0.1622,
+        worst_compactness: 0.6656, worst_concavity: 0.7119, worst_concave_points: 0.2654, worst_symmetry: 0.4601, worst_fractal_dimension: 0.1189
+    }
+};
+
+function loadSample(type) {
+    const data = samples[type];
+    for (const key in data) {
+        const el = document.getElementById(key);
+        if (el) el.value = data[key];
+    }
+}
+</script>
+
+</body>
+</html>
