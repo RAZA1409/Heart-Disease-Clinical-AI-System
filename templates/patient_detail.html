@@ -955,44 +955,53 @@ function handleAIEnter(event) {
 function addAIMessage(message, type) {
 
     const messages = document.getElementById("aiChatMessages");
+    if (!messages) return;
 
     const messageDiv = document.createElement("div");
-
     messageDiv.className = "ai-message " + type;
 
-    let formattedMessage = String(message);
+    // Treat all message content as untrusted; build DOM nodes safely using text and element nodes
+    const rawMessage = String(message ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const lines = rawMessage.split("\n");
 
-    // Clean escaped Markdown
-    formattedMessage = formattedMessage.replace(/\\([*_])/g, "$1");
+    lines.forEach((line, lineIndex) => {
+        // Clean escaped Markdown (e.g. \* or \_)
+        let processedLine = line.replace(/\\([*_])/g, "$1");
 
-    // Remove Markdown headings
-    formattedMessage = formattedMessage.replace(/^#{1,6}\s*/gm, "");
+        // Remove Markdown headings (e.g. "### Heading" -> "Heading")
+        processedLine = processedLine.replace(/^#{1,6}\s*/, "");
 
-    // Convert bold Markdown
-    formattedMessage = formattedMessage.replace(
-        /\*\*(.*?)\*\*/gs,
-        "<strong>$1</strong>"
-    );
+        // Convert bullet points (e.g. "- item" or "* item" -> "• item")
+        processedLine = processedLine.replace(/^\s*[*-]\s+/, "• ");
 
-    // Convert bullet points
-    formattedMessage = formattedMessage.replace(
-        /^\s*[*-]\s+/gm,
-        "• "
-    );
+        // Remove leftover standalone asterisks
+        if (/^\s*\*+\s*$/.test(processedLine)) {
+            processedLine = "";
+        }
 
-    // Remove leftover standalone asterisks
-    formattedMessage = formattedMessage.replace(
-        /^\s*\*+\s*$/gm,
-        ""
-    );
+        // Parse bold **text** safely into DOM text and strong nodes
+        const parts = processedLine.split(/(\*\*.*?\*\*)/g);
 
-    // Preserve line breaks
-    formattedMessage = formattedMessage.replace(/\n/g, "<br>");
+        parts.forEach(part => {
+            if (part.startsWith("**") && part.endsWith("**") && part.length >= 4) {
+                const boldContent = part.slice(2, -2);
+                if (boldContent.length > 0) {
+                    const strong = document.createElement("strong");
+                    strong.textContent = boldContent;
+                    messageDiv.appendChild(strong);
+                }
+            } else if (part.length > 0) {
+                messageDiv.appendChild(document.createTextNode(part));
+            }
+        });
 
-    messageDiv.innerHTML = formattedMessage;
+        // Preserve line breaks between lines
+        if (lineIndex < lines.length - 1) {
+            messageDiv.appendChild(document.createElement("br"));
+        }
+    });
 
     messages.appendChild(messageDiv);
-
     messages.scrollTop = messages.scrollHeight;
 }
 
