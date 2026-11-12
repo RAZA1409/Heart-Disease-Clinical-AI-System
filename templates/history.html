@@ -217,6 +217,14 @@ Delete
 </tr>
 {% endfor %}
 
+{% if not patients %}
+<tr>
+<td colspan="6" style="text-align:center; padding:30px; opacity:0.8;">
+No patient records found. <a href="{{ url_for('predict_page') }}" style="color:#38bdf8; text-decoration:none; font-weight:600;">Start a New Assessment</a>
+</td>
+</tr>
+{% endif %}
+
 </tbody>
 
 </table>

@@ -624,27 +624,31 @@ body{
                      {% endif %}
                 </div>
 
-            <!-- ✅ FIXED VALUES -->
+            <!-- Clinical Feature Grid with Dynamic Status -->
             <div class="feature-grid">
 
-                <div class="card normal">
-                    <h4>Cholesterol</h4>
+                <div class="card {% if patient.get('Cholesterol Status') == 'High' %}danger{% elif patient.get('Cholesterol Status') == 'Low' %}warning{% else %}normal{% endif %}">
+                    <h4>Cholesterol (mg/dL)</h4>
                     <p>{{ patient['chol'] }}</p>
+                    <small style="opacity:0.85;">Status: {{ patient.get('Cholesterol Status', 'Normal') }}</small>
                 </div>
 
-                <div class="card normal">
-                    <h4>Resting BP</h4>
+                <div class="card {% if patient.get('Resting BP Status') == 'High' %}danger{% elif patient.get('Resting BP Status') == 'Low' %}warning{% else %}normal{% endif %}">
+                    <h4>Resting BP (mmHg)</h4>
                     <p>{{ patient['trestbps'] }}</p>
+                    <small style="opacity:0.85;">Status: {{ patient.get('Resting BP Status', 'Normal') }}</small>
                 </div>
 
-                <div class="card warning">
-                    <h4>Max Heart Rate</h4>
+                <div class="card {% if patient.get('Max Heart Rate Status') == 'High' %}danger{% elif patient.get('Max Heart Rate Status') == 'Low' %}warning{% else %}normal{% endif %}">
+                    <h4>Max Heart Rate (bpm)</h4>
                     <p>{{ patient['thalach'] }}</p>
+                    <small style="opacity:0.85;">Status: {{ patient.get('Max Heart Rate Status', 'Normal') }}</small>
                 </div>
 
-                <div class="card danger">
-                    <h4>ST Depression</h4>
+                <div class="card {% if patient.get('ST Depression Status') == 'High' %}danger{% elif patient.get('ST Depression Status') == 'Low' %}warning{% else %}normal{% endif %}">
+                    <h4>ST Depression (mm)</h4>
                     <p>{{ patient['oldpeak'] }}</p>
+                    <small style="opacity:0.85;">Status: {{ patient.get('ST Depression Status', 'Normal') }}</small>
                 </div>
 
             </div>

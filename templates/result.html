@@ -138,7 +138,8 @@
     </div>
 
     <div class="action-buttons">
-        <a href="{{ url_for('home') }}" class="button-primary">➕ New Assessment</a>
+        <a href="{{ url_for('predict_page') }}" class="button-primary">➕ New Assessment</a>
+        <a href="{{ url_for('patient_detail', patient_id=patient_id) }}" class="button-primary">🧾 View Detailed Report</a>
         <a href="{{ url_for('dashboard') }}" class="button-primary">📊 Dashboard</a>
         <a href="{{ url_for('history') }}" class="button-primary">📁 History</a>
     </div>

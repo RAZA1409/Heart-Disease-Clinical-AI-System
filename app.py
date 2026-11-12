@@ -128,12 +128,22 @@ REVERSE_FEATURE_MAP = {
 init_db()
 
 # ------------------------------------------------------------
-# Load Model Files
+# Load Model & Evaluation Metadata Artifacts
 # ------------------------------------------------------------
 
 model = joblib.load("models/best_model.pkl")
 scaler = joblib.load("models/scaler.pkl")
 feature_columns = joblib.load("models/feature_columns.pkl")
+
+try:
+    CACHED_MODEL_INFO = joblib.load("models/model_info.pkl")
+except Exception:
+    CACHED_MODEL_INFO = {}
+
+try:
+    CACHED_OPT_COMPARISON = joblib.load("models/optimization_comparison.pkl")
+except Exception:
+    CACHED_OPT_COMPARISON = {}
 
 # ------------------------------------------------------------
 # Utility Functions
@@ -363,7 +373,7 @@ def dashboard():
         system_status = "Stable"
 
     # Load model info
-    model_info = joblib.load("models/model_info.pkl")
+    model_info = CACHED_MODEL_INFO or joblib.load("models/model_info.pkl")
     prf_data = model_info.get("prf_data", {})
     # ==========================
     # OVERFITTING DETECTION
@@ -388,7 +398,7 @@ def dashboard():
     model_values = [round(all_models[m]["test"] * 100, 2) for m in model_labels]
     train_loss_values = [round(all_models[m]["train_loss"], 3) for m in model_labels]
     test_loss_values = [round(all_models[m]["test_loss"], 3) for m in model_labels]
-    opt = joblib.load("models/optimization_comparison.pkl")
+    opt = CACHED_OPT_COMPARISON or joblib.load("models/optimization_comparison.pkl")
     opt_labels = list(opt.keys())
     opt_values = [round(v*100,2) for v in opt.values()]
     conf_matrix = model_info.get("confusion_matrix", [[0,0],[0,0]])
@@ -447,23 +457,26 @@ def predict():
     if "user" not in session:
         return redirect(url_for("login"))
 
-    patient_name = request.form["patient_name"].strip().title() or "Unknown"
+    try:
+        patient_name = request.form.get("patient_name", "").strip().title() or "Unknown"
 
-    # UI → Numeric
-    sex = FEATURE_MAP["sex"][request.form["sex"]]
-    cp = FEATURE_MAP["cp"][request.form["cp"]]
-    fbs = FEATURE_MAP["fbs"][request.form["fbs"]]
-    restecg = FEATURE_MAP["restecg"][request.form["restecg"]]
-    exang = FEATURE_MAP["exang"][request.form["exang"]]
-    slope = FEATURE_MAP["slope"][request.form["slope"]]
-    thal = FEATURE_MAP["thal"][request.form["thal"]]
+        # UI → Numeric
+        sex = FEATURE_MAP["sex"][request.form["sex"]]
+        cp = FEATURE_MAP["cp"][request.form["cp"]]
+        fbs = FEATURE_MAP["fbs"][request.form["fbs"]]
+        restecg = FEATURE_MAP["restecg"][request.form["restecg"]]
+        exang = FEATURE_MAP["exang"][request.form["exang"]]
+        slope = FEATURE_MAP["slope"][request.form["slope"]]
+        thal = FEATURE_MAP["thal"][request.form["thal"]]
 
-    age = float(request.form["age"])
-    trestbps = float(request.form["trestbps"])
-    chol = float(request.form["chol"])
-    thalach = float(request.form["thalach"])
-    oldpeak = float(request.form["oldpeak"])
-    ca = float(request.form["ca"])
+        age = float(request.form["age"])
+        trestbps = float(request.form["trestbps"])
+        chol = float(request.form["chol"])
+        thalach = float(request.form["thalach"])
+        oldpeak = float(request.form["oldpeak"])
+        ca = float(request.form["ca"])
+    except (KeyError, ValueError, TypeError) as e:
+        return render_template("predict.html", error=f"Invalid clinical input: {str(e)}"), 400
 
     user_data = pd.DataFrame([{
         "Age": age,
@@ -748,36 +761,71 @@ def download_report(patient_id):
     from database import get_db_connection
 
     conn = get_db_connection()
-    patient = conn.execute(
+    patient_row = conn.execute(
         "SELECT * FROM patients WHERE patient_id = ?",
         (patient_id,)
     ).fetchone()
     conn.close()
 
-    if not patient:
+    if not patient_row:
         return redirect(url_for("history"))
+
+    patient = dict(patient_row)
 
     buffer = BytesIO()
     pdf = SimpleDocTemplate(buffer)
+    styles = getSampleStyleSheet()
+
+    sex_text = REVERSE_FEATURE_MAP["sex"].get(patient.get("sex"), str(patient.get("sex")))
+    cp_text = REVERSE_FEATURE_MAP["cp"].get(patient.get("cp"), str(patient.get("cp")))
+    fbs_text = REVERSE_FEATURE_MAP["fbs"].get(patient.get("fbs"), str(patient.get("fbs")))
+    exang_text = REVERSE_FEATURE_MAP["exang"].get(patient.get("exang"), str(patient.get("exang")))
+
+    elements = []
+    title_style = ParagraphStyle(
+        'ReportTitle',
+        parent=styles['Heading1'],
+        fontSize=16,
+        leading=20,
+        textColor=colors.HexColor('#1e3c4f'),
+        alignment=1
+    )
+    elements.append(Paragraph("HEART DISEASE CLINICAL AI ASSESSMENT REPORT", title_style))
+    elements.append(Spacer(1, 14))
 
     data = [
-        ["Field", "Value"],
-        ["Patient ID", patient["patient_id"]],
-        ["Patient Name", patient["patient_name"]],
-        ["Age", str(patient["age"])],
-        ["Prediction", patient["result"]],
-        ["Risk Level", patient["risk_level"]],
-        ["Probability (%)", str(patient["probability"])],
-        ["Timestamp", patient["timestamp"]],
+        ["Category", "Parameter", "Clinical Value"],
+        ["Demographics", "Patient ID", str(patient.get("patient_id", ""))],
+        ["", "Patient Name", str(patient.get("patient_name", ""))],
+        ["", "Age", str(patient.get("age", "")) + " years"],
+        ["", "Sex", sex_text],
+        ["Vitals & Labs", "Resting Blood Pressure", str(patient.get("trestbps", "")) + " mmHg"],
+        ["", "Serum Cholesterol", str(patient.get("chol", "")) + " mg/dL"],
+        ["", "Max Heart Rate Achieved", str(patient.get("thalach", "")) + " bpm"],
+        ["", "Fasting Blood Sugar > 120", fbs_text],
+        ["Cardiac Tests", "Chest Pain Type", cp_text],
+        ["", "ST Depression", str(patient.get("oldpeak", "")) + " mm"],
+        ["", "Exercise Induced Angina", exang_text],
+        ["", "Major Vessels Fluro (0-3)", str(patient.get("ca", ""))],
+        ["AI Diagnostic Result", "Heart Disease Prediction", str(patient.get("result", ""))],
+        ["", "Risk Probability", str(patient.get("probability", "")) + "%"],
+        ["", "Clinical Risk Level", str(patient.get("risk_level", ""))],
+        ["", "Assessment Date & Time", str(patient.get("timestamp", ""))[:19]],
     ]
 
-    table = Table(data)
-    table.setStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+    table = Table(data, colWidths=[130, 180, 160])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1e3c4f')),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-    ])
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#cbd5e1')),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f8fafc')])
+    ]))
 
-    pdf.build([table])
+    elements.append(table)
+    pdf.build(elements)
     buffer.seek(0)
 
     return send_file(
