@@ -31,18 +31,40 @@ from risk_config import classify_risk, LOW_RISK_THRESHOLD, MODERATE_RISK_THRESHO
 
 load_dotenv()
 
-gemini_client = genai.Client(
-    api_key=os.getenv("GEMINI_API_KEY")
-)
-print("Gemini Key Found:", os.getenv("GEMINI_API_KEY") is not None)
+is_production = os.getenv("RENDER") is not None or os.getenv("FLASK_ENV") == "production"
+
+# Secret Key Handling: Require explicit SECRET_KEY in production, allow development fallback
+secret_key = os.getenv("SECRET_KEY")
+if not secret_key:
+    if is_production:
+        raise RuntimeError(
+            "FATAL: SECRET_KEY environment variable is not configured. "
+            "A cryptographically secure SECRET_KEY is mandatory for production deployment on Render."
+        )
+    secret_key = "dev-insecure-secret-key-change-in-production"
+
+gemini_api_key = os.getenv("GEMINI_API_KEY")
+gemini_client = genai.Client(api_key=gemini_api_key) if gemini_api_key else None
+print("Gemini Key Found:", gemini_client is not None)
 
 # client = OpenAI(
 #     api_key=os.getenv("OPENAI_API_KEY")
 # )
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY", "e83a42f9b8c6451e9f1a23847b2c9e54d68201fa3829471abefc918237465abc")
+app.secret_key = secret_key
 
 app.permanent_session_lifetime = timedelta(days=30)
+
+# Secure Cookie Settings for Production HTTPS
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+if is_production:
+    # In production, cookies MUST be secure over HTTPS; cannot be overridden by environment variable
+    app.config["SESSION_COOKIE_SECURE"] = True
+else:
+    # In local development, allow configurable cookie security (defaulting to False for local HTTP)
+    app.config["SESSION_COOKIE_SECURE"] = os.getenv("SESSION_COOKIE_SECURE", "false").lower() in ("true", "1")
 
 def generate_csrf_token():
     if "csrf_token" not in session:
@@ -128,12 +150,21 @@ REVERSE_FEATURE_MAP = {
 init_db()
 
 # ------------------------------------------------------------
-# Load Model & Evaluation Metadata Artifacts
+# Required Production Model Artifacts
 # ------------------------------------------------------------
 
-model = joblib.load("models/best_model.pkl")
-scaler = joblib.load("models/scaler.pkl")
-feature_columns = joblib.load("models/feature_columns.pkl")
+def _load_required_artifact(path, description):
+    if not os.path.exists(path):
+        raise FileNotFoundError(
+            f"FATAL: Required model artifact for {description} was not found at '{path}'. "
+            f"Please verify all model artifacts are committed and deployed."
+        )
+    return joblib.load(path)
+
+# Heart Disease Model Artifacts
+model = _load_required_artifact("models/best_model.pkl", "Heart Disease Model")
+scaler = _load_required_artifact("models/scaler.pkl", "Heart Disease Scaler")
+feature_columns = _load_required_artifact("models/feature_columns.pkl", "Heart Disease Feature Columns")
 
 try:
     CACHED_MODEL_INFO = joblib.load("models/model_info.pkl")
@@ -145,31 +176,15 @@ try:
 except Exception:
     CACHED_OPT_COMPARISON = {}
 
-# ------------------------------------------------------------
-# Load Diabetes Pipeline & Model Metadata Artifacts
-# ------------------------------------------------------------
-try:
-    diabetes_pipeline = joblib.load("models/diabetes_pipeline.pkl")
-    diabetes_feature_columns = joblib.load("models/diabetes_feature_columns.pkl")
-    diabetes_model_info = joblib.load("models/diabetes_model_info.pkl")
-except Exception as e:
-    print(f"Warning: Diabetes artifacts not fully loaded: {e}")
-    diabetes_pipeline = None
-    diabetes_feature_columns = []
-    diabetes_model_info = {}
+# Diabetes Model Artifacts
+diabetes_pipeline = _load_required_artifact("models/diabetes_pipeline.pkl", "Diabetes Pipeline")
+diabetes_feature_columns = _load_required_artifact("models/diabetes_feature_columns.pkl", "Diabetes Feature Columns")
+diabetes_model_info = _load_required_artifact("models/diabetes_model_info.pkl", "Diabetes Model Metadata")
 
-# ------------------------------------------------------------
-# Load Breast Cancer Pipeline & Model Metadata Artifacts
-# ------------------------------------------------------------
-try:
-    breast_cancer_pipeline = joblib.load("models/breast_cancer_pipeline.pkl")
-    breast_cancer_feature_columns = joblib.load("models/breast_cancer_feature_columns.pkl")
-    breast_cancer_model_info = joblib.load("models/breast_cancer_model_info.pkl")
-except Exception as e:
-    print(f"Warning: Breast Cancer artifacts not fully loaded: {e}")
-    breast_cancer_pipeline = None
-    breast_cancer_feature_columns = []
-    breast_cancer_model_info = {}
+# Breast Cancer Model Artifacts
+breast_cancer_pipeline = _load_required_artifact("models/breast_cancer_pipeline.pkl", "Breast Cancer Pipeline")
+breast_cancer_feature_columns = _load_required_artifact("models/breast_cancer_feature_columns.pkl", "Breast Cancer Feature Columns")
+breast_cancer_model_info = _load_required_artifact("models/breast_cancer_model_info.pkl", "Breast Cancer Model Metadata")
 
 # ------------------------------------------------------------
 # Utility Functions
@@ -238,9 +253,23 @@ def login():
             response = make_response(redirect(url_for("dashboard")))
 
             if remember:
-                response.set_cookie("remember_user", username, max_age=60*60*24*30)  # 30 days
+                response.set_cookie(
+                    "remember_user",
+                    username,
+                    max_age=60*60*24*30,
+                    httponly=True,
+                    samesite="Lax",
+                    secure=app.config["SESSION_COOKIE_SECURE"]
+                )
             else:
-                response.set_cookie("remember_user", "", expires=0)
+                response.set_cookie(
+                    "remember_user",
+                    "",
+                    expires=0,
+                    httponly=True,
+                    samesite="Lax",
+                    secure=app.config["SESSION_COOKIE_SECURE"]
+                )
 
             return response
 
@@ -1799,6 +1828,11 @@ def ai_assistant():
         # AI ASSISTANT RESPONSE
         # ----------------------------------------------------
 
+        if not gemini_client:
+            return {
+                "reply": "AI Clinical Assistant is currently unavailable (GEMINI_API_KEY environment variable is not configured on this server)."
+            }, 503
+
         short_context = f"""
             Patient Name: {patient.get('patient_name')}
             Age: {patient.get('age')}
@@ -1914,7 +1948,9 @@ def test_patient_context(patient_id):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.getenv("PORT", 5000))
+    debug = os.getenv("FLASK_DEBUG", "false").lower() in ("true", "1")
+    app.run(host="0.0.0.0", port=port, debug=debug)
 
 
 # if __name__ == "__main__":

@@ -1,17 +1,26 @@
 import sqlite3
 import os
 from werkzeug.security import generate_password_hash
+from dotenv import load_dotenv
 
+load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE_PATH = os.getenv("DATABASE_PATH", os.path.join(BASE_DIR, "database.db"))
+
+
+def get_database_path():
+    return os.getenv("DATABASE_PATH", os.path.join(BASE_DIR, "database.db"))
+
+
+DATABASE_PATH = get_database_path()
 
 
 def get_db_connection():
-    db_dir = os.path.dirname(DATABASE_PATH)
+    db_path = get_database_path()
+    db_dir = os.path.dirname(db_path)
     if db_dir and not os.path.exists(db_dir):
         os.makedirs(db_dir, exist_ok=True)
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -130,7 +139,18 @@ def init_db():
     existing_admin = cursor.fetchone()
 
     if not existing_admin:
-        default_admin_pass = os.getenv("ADMIN_DEFAULT_PASSWORD", "admin123")
+        is_production = os.getenv("RENDER") is not None or os.getenv("FLASK_ENV") == "production"
+        default_admin_pass = os.getenv("ADMIN_DEFAULT_PASSWORD")
+
+        if not default_admin_pass:
+            if is_production:
+                conn.close()
+                raise RuntimeError(
+                    "FATAL: ADMIN_DEFAULT_PASSWORD environment variable is not configured. "
+                    "In production, a secure ADMIN_DEFAULT_PASSWORD is required to initialize the administrator account."
+                )
+            default_admin_pass = "admin123"
+
         hashed_password = generate_password_hash(default_admin_pass)
 
         cursor.execute(
