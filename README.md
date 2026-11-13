@@ -96,34 +96,60 @@ This approach improves search efficiency and explores a broader solution space c
 
 ## 🖥 How To Run Locally
 
-### 1️⃣ Clone Repository
+### 🚀 Quick Start (Daily Usage)
 
+1. **Open the project folder** in Antigravity or VS Code:
+   ```powershell
+   code .
+   ```
+2. **Automatic Environment Activation**: Antigravity / VS Code automatically detects and activates `.venv` via workspace settings.
+3. **Launch Application**:
+   - **Terminal (One Command)**:
+     ```powershell
+     python run.py
+     ```
+   - **One-Click Run (F5)**:
+     Press <kbd>F5</kbd> (or go to Run & Debug ➔ select **Run Multi-Disease Clinical AI**).
+4. **Access the System**:
+   Open [http://127.0.0.1:5000/login](http://127.0.0.1:5000/login) in your web browser.
+
+---
+
+### ⚙️ First-Time Environment Setup
+
+If setting up the project on a new machine or fresh directory:
+
+1. **Open the project folder**:
+   ```powershell
+   cd "C:\D drive\Heart_Disease_Optimization_Project"
+   ```
+2. **Create the virtual environment** (only if `.venv` does not already exist):
+   ```powershell
+   python -m venv .venv
+   ```
+3. **Activate the virtual environment**:
+   ```powershell
+   .\.venv\Scripts\Activate.ps1
+   ```
+   > *Note:* If PowerShell blocks script execution, run:
+   > `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+4. **Install project dependencies**:
+   ```powershell
+   python -m pip install -r requirements.txt
+   ```
+5. **Start the application**:
+   ```powershell
+   python run.py
+   ```
+
+---
+
+### 🌐 Production Deployment (Render)
+
+For production deployment on Render, the application uses Gunicorn directly without modification:
 ```bash
-git clone https://github.com/RAZA1409/Heart-Disease-Clinical-AI-System.git
-cd Heart-Disease-Clinical-AI-System
+gunicorn app:app
 ```
-
-### 2️⃣ Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3️⃣ Train Model (Optional)
-
-```bash
-python train_model.py
-```
-
-### 4️⃣ Run Flask Application
-
-```bash
-python app.py
-```
-
-Open in browser:
-
-http://127.0.0.1:5000/login
 
 ---
 

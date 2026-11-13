@@ -1,4 +1,5 @@
 # Virtual environment
+.venv/
 venv/
 ENV/
 env/
@@ -34,6 +35,8 @@ models/*backup.pkl
 models/*candidate.pkl
 
 # IDE & Editor Settings
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
 .idea/
 *.swp
