@@ -546,6 +546,21 @@ def predict():
         thalach = float(request.form["thalach"])
         oldpeak = float(request.form["oldpeak"])
         ca = float(request.form["ca"])
+
+        # Physiological range validation matching frontend constraints and clinical bounds
+        if age < 1 or age > 120:
+            raise ValueError("Age must be between 1 and 120 years.")
+        if trestbps < 50 or trestbps > 300:
+            raise ValueError("Resting blood pressure must be between 50 and 300 mmHg.")
+        if chol < 50 or chol > 700:
+            raise ValueError("Serum cholesterol must be between 50 and 700 mg/dL.")
+        if thalach < 40 or thalach > 250:
+            raise ValueError("Maximum heart rate must be between 40 and 250 bpm.")
+        if oldpeak < 0.0 or oldpeak > 10.0:
+            raise ValueError("ST depression must be between 0.0 and 10.0 mm.")
+        if ca < 0 or ca > 3:
+            raise ValueError("Number of major vessels must be between 0 and 3.")
+
     except (KeyError, ValueError, TypeError) as e:
         return render_template("predict.html", error=f"Invalid clinical input: {str(e)}"), 400
 
@@ -566,14 +581,16 @@ def predict():
     }])
 
     user_scaled = scaler.transform(user_data)
-    probability = float(model.predict_proba(user_scaled)[0][1])
+    pos_idx = list(model.classes_).index(1)
+    probability = float(model.predict_proba(user_scaled)[0][pos_idx])
 
     prediction = 1 if probability >= 0.5 else 0
 
     prob_percentage = round(probability * 100, 2)
     risk_level = classify_risk(prob_percentage)
 
-    patient_id = "PID" + datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    # Collision-resistant unique Patient ID with human-readable timestamp and 8-hex random entropy
+    patient_id = "PID" + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + secrets.token_hex(4).upper()
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -850,7 +867,10 @@ def download_report(patient_id):
     sex_text = REVERSE_FEATURE_MAP["sex"].get(patient.get("sex"), str(patient.get("sex")))
     cp_text = REVERSE_FEATURE_MAP["cp"].get(patient.get("cp"), str(patient.get("cp")))
     fbs_text = REVERSE_FEATURE_MAP["fbs"].get(patient.get("fbs"), str(patient.get("fbs")))
+    restecg_text = REVERSE_FEATURE_MAP["restecg"].get(patient.get("restecg"), str(patient.get("restecg")))
     exang_text = REVERSE_FEATURE_MAP["exang"].get(patient.get("exang"), str(patient.get("exang")))
+    slope_text = REVERSE_FEATURE_MAP["slope"].get(patient.get("slope"), str(patient.get("slope")))
+    thal_text = REVERSE_FEATURE_MAP["thal"].get(patient.get("thal"), str(patient.get("thal")))
 
     elements = []
     title_style = ParagraphStyle(
@@ -862,7 +882,18 @@ def download_report(patient_id):
         alignment=1
     )
     elements.append(Paragraph("HEART DISEASE CLINICAL AI ASSESSMENT REPORT", title_style))
-    elements.append(Spacer(1, 14))
+    elements.append(Spacer(1, 6))
+
+    disclaimer_style = ParagraphStyle(
+        'HeartDisclaimerStyle',
+        parent=styles['Normal'],
+        fontSize=8,
+        leading=11,
+        textColor=colors.HexColor('#64748b'),
+        alignment=1
+    )
+    elements.append(Paragraph("Clinical Decision Support Estimate — Not an Official Medical Diagnosis", disclaimer_style))
+    elements.append(Spacer(1, 12))
 
     data = [
         ["Category", "Parameter", "Clinical Value"],
@@ -875,12 +906,15 @@ def download_report(patient_id):
         ["", "Max Heart Rate Achieved", str(patient.get("thalach", "")) + " bpm"],
         ["", "Fasting Blood Sugar > 120", fbs_text],
         ["Cardiac Tests", "Chest Pain Type", cp_text],
+        ["", "Resting ECG Results", restecg_text],
         ["", "ST Depression", str(patient.get("oldpeak", "")) + " mm"],
+        ["", "Slope of ST", slope_text],
         ["", "Exercise Induced Angina", exang_text],
         ["", "Major Vessels Fluro (0-3)", str(patient.get("ca", ""))],
-        ["AI Diagnostic Result", "Heart Disease Prediction", str(patient.get("result", ""))],
+        ["", "Thallium", thal_text],
+        ["AI Decision Support", "Heart Disease Prediction", str(patient.get("result", ""))],
         ["", "Risk Probability", str(patient.get("probability", "")) + "%"],
-        ["", "Clinical Risk Level", str(patient.get("risk_level", ""))],
+        ["", "Statistical Risk Tier", str(patient.get("risk_level", "")) + " (Non-Diagnostic)"],
         ["", "Assessment Date & Time", str(patient.get("timestamp", ""))[:19]],
     ]
 
@@ -1050,7 +1084,8 @@ def diabetes_predict():
         "Age": age
     }])
 
-    probability = float(diabetes_pipeline.predict_proba(user_df)[0][1])
+    pos_idx = list(diabetes_pipeline.classes_).index(1)
+    probability = float(diabetes_pipeline.predict_proba(user_df)[0][pos_idx])
     prob_percentage = round(probability * 100, 2)
     prediction = "Present" if probability >= 0.5 else "Absent"
     risk_level = classify_risk(prob_percentage)
@@ -1834,7 +1869,7 @@ def ai_assistant():
             }, 503
 
         short_context = f"""
-            Patient Name: {patient.get('patient_name')}
+            Patient Reference: [De-identified] ({patient_id})
             Age: {patient.get('age')}
             Risk Level: {patient.get('risk_level')}
             Probability: {patient.get('probability')}%
