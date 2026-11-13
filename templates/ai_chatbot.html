@@ -1,0 +1,592 @@
+{# ==============================================================================
+   REUSABLE CLINICAL AI CHATBOT COMPONENT
+   Shared across Heart Disease, Diabetes, and Breast Cancer patient detail views.
+   ============================================================================== #}
+
+{% set d_type = disease_type if disease_type is defined else ('diabetes' if patient.glucose is defined else ('breast_cancer' if patient.mean_radius is defined else 'heart')) %}
+
+{% if d_type == 'diabetes' %}
+    {% set d_icon = '🩸' %}
+    {% set d_title = 'Diabetes AI Assistant' %}
+    {% set d_module = 'Diabetes Mellitus' %}
+    {% set d_accent = '#0284c7' %}
+    {% set d_accent_dark = '#0369a1' %}
+    {% set default_questions = [
+        'Why is this patient classified as high risk?',
+        'Explain the glucose level for this patient',
+        'How does BMI affect this metabolic prediction?',
+        'What clinical lifestyle modifications are advised?'
+    ] %}
+{% elif d_type == 'breast_cancer' %}
+    {% set d_icon = '🎗️' %}
+    {% set d_title = 'Breast Cytology AI Assistant' %}
+    {% set d_module = 'Breast Cytology' %}
+    {% set d_accent = '#ec4899' %}
+    {% set d_accent_dark = '#be185d' %}
+    {% set default_questions = [
+        'Explain the cytological malignancy risk',
+        'What nuclear features contributed to this prediction?',
+        'What does the mean radius and area indicate?',
+        'What clinical diagnostic follow-up is recommended?'
+    ] %}
+{% else %}
+    {% set d_icon = '🫀' %}
+    {% set d_title = 'Cardiovascular AI Assistant' %}
+    {% set d_module = 'Cardiovascular' %}
+    {% set d_accent = '#2563eb' %}
+    {% set d_accent_dark = '#1e40af' %}
+    {% set default_questions = [
+        'Why is this patient classified as high risk?',
+        'Why did the system give this probability?',
+        'What is the main cardiovascular risk factor?',
+        'What does the ST depression value mean for this patient?'
+    ] %}
+{% endif %}
+
+<style>
+/* -------------------------------------------------------------
+   REUSABLE AI CLINICAL ASSISTANT STYLES
+   ------------------------------------------------------------- */
+.ai-chat-button {
+    position: fixed;
+    right: 25px;
+    bottom: 25px;
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, {{ d_accent }}, {{ d_accent_dark }});
+    color: white;
+    font-size: 28px;
+    cursor: grab;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    z-index: 9999;
+    transition: transform 0.2s, box-shadow 0.2s;
+    user-select: none;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ai-chat-button:hover {
+    transform: scale(1.08);
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
+}
+.ai-chat-button.dragging {
+    cursor: grabbing;
+    transform: scale(1.08);
+}
+
+/* Chat Window Modal */
+.ai-chat-box {
+    position: fixed;
+    right: 25px;
+    bottom: 100px;
+    width: 390px;
+    height: 540px;
+    max-height: calc(100vh - 120px);
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 9998;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Header */
+.ai-chat-header {
+    background: linear-gradient(135deg, #0f172a, {{ d_accent_dark }});
+    color: white;
+    padding: 16px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.ai-chat-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.ai-chat-title .ai-avatar {
+    font-size: 24px;
+    line-height: 1;
+}
+.ai-chat-title strong {
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
+    display: block;
+}
+.ai-chat-title small {
+    display: block;
+    font-size: 11px;
+    color: #cbd5e1;
+    margin-top: 2px;
+}
+.ai-close {
+    border: none;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+.ai-close:hover {
+    background: rgba(239, 68, 68, 0.8);
+}
+
+/* Messages Area */
+.ai-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.ai-message {
+    max-width: 88%;
+    padding: 12px 15px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+}
+.ai-message.bot {
+    background: #ffffff;
+    color: #1e293b;
+    align-self: flex-start;
+    border: 1px solid #e2e8f0;
+    border-top-left-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+.ai-message.user {
+    background: {{ d_accent }};
+    color: #ffffff;
+    align-self: flex-end;
+    border-top-right-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+.ai-message strong {
+    font-weight: 600;
+    color: inherit;
+}
+.ai-message.bot strong {
+    color: #0f172a;
+}
+.ai-message.loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #64748b;
+    font-style: italic;
+}
+
+/* Quick Inquiry Questions */
+.ai-quick-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+    margin-bottom: 6px;
+}
+.ai-quick-questions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.ai-quick-questions button {
+    text-align: left;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #f1f5f9;
+    color: #334155;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+.ai-quick-questions button:hover {
+    background: #e2e8f0;
+    border-color: {{ d_accent }};
+    color: #0f172a;
+}
+
+/* Clinical Decision Support Disclaimer */
+.ai-disclaimer {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    font-size: 10px;
+    color: #64748b;
+    background: #f1f5f9;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+    line-height: 1.4;
+}
+
+/* Input Area */
+.ai-chat-input-area {
+    flex-shrink: 0;
+    display: flex;
+    padding: 10px 14px;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    gap: 8px;
+    align-items: center;
+}
+.ai-chat-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    outline: none;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    resize: none;
+    line-height: 1.4;
+    max-height: 80px;
+    background: #f8fafc;
+    color: #0f172a;
+}
+.ai-chat-input:focus {
+    border-color: {{ d_accent }};
+    background: #ffffff;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+.ai-send-button {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 10px;
+    background: {{ d_accent }};
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.1s;
+}
+.ai-send-button:hover {
+    background: {{ d_accent_dark }};
+    transform: scale(1.04);
+}
+.ai-send-button:disabled {
+    background: #94a3b8;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 600px) {
+    .ai-chat-box {
+        right: 10px;
+        bottom: 85px;
+        width: calc(100% - 20px);
+        height: 480px;
+    }
+    .ai-chat-button {
+        right: 15px;
+        bottom: 15px;
+        width: 56px;
+        height: 56px;
+        font-size: 24px;
+    }
+}
+</style>
+
+<!-- Floating Trigger Button -->
+<button
+    class="ai-chat-button"
+    id="aiChatButton"
+    title="{{ d_title }}"
+    aria-label="Open Clinical AI Assistant">
+    {{ d_icon }}
+</button>
+
+<!-- Chat Window -->
+<div class="ai-chat-box" id="aiChatBox" role="dialog" aria-label="Clinical AI Assistant">
+    <!-- Header -->
+    <div class="ai-chat-header">
+        <div class="ai-chat-title">
+            <span class="ai-avatar">{{ d_icon }}</span>
+            <div>
+                <strong>{{ d_title }}</strong>
+                <small>{{ d_module }} Module • Explain result</small>
+            </div>
+        </div>
+        <button type="button" class="ai-close" id="aiCloseButton" onclick="toggleAIChat()" aria-label="Close Assistant">×</button>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="ai-chat-messages" id="aiChatMessages">
+        <div class="ai-message bot">
+            👋 <strong>Hello, Doctor!</strong><br><br>
+            I am your <strong>{{ d_title }}</strong> for the <strong>{{ d_module }}</strong> module.<br>
+            I can explain this patient's prediction, probability score, contributing biomarkers, and risk factors.<br><br>
+
+            <div class="ai-quick-title">Suggested Inquiries:</div>
+            <div class="ai-quick-questions">
+                {% for q in default_questions %}
+                <button type="button" onclick="askAIQuestion('{{ q|replace('\'', '\\\'') }}')">
+                    {{ q }}
+                </button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Clinical Disclaimer -->
+    <div class="ai-disclaimer">
+        ⚕️ <strong>Decision Support:</strong> AI explanations are statistical estimates for educational guidance. Not an official medical diagnosis.
+    </div>
+
+    <!-- Input Area -->
+    <div class="ai-chat-input-area">
+        <textarea
+            id="aiChatInput"
+            class="ai-chat-input"
+            placeholder="Ask about this patient's clinical parameters..."
+            rows="1"
+            onkeydown="handleAIEnter(event)"
+        ></textarea>
+        <button
+            type="button"
+            class="ai-send-button"
+            id="aiSendButton"
+            onclick="sendAIMessage()"
+            title="Send Message"
+        >
+            ➤
+        </button>
+    </div>
+</div>
+
+<script>
+(function() {
+    // Component Context Variables
+    const aiPatientId = "{{ patient['patient_id'] }}";
+    const aiDiseaseType = "{{ d_type }}";
+    const aiCsrfToken = "{{ csrf_token() }}";
+
+    // Draggable Button Support
+    const btn = document.getElementById("aiChatButton");
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let startLeft = 0, startTop = 0;
+    let wasMoved = false;
+
+    if (btn) {
+        btn.addEventListener("pointerdown", function(e) {
+            isDragging = true;
+            wasMoved = false;
+            startX = e.clientX;
+            startY = e.clientY;
+            const rect = btn.getBoundingClientRect();
+            startLeft = rect.left;
+            startTop = rect.top;
+            btn.classList.add("dragging");
+            btn.setPointerCapture(e.pointerId);
+        });
+
+        btn.addEventListener("pointermove", function(e) {
+            if (!isDragging) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                wasMoved = true;
+            }
+            if (!wasMoved) return;
+
+            let newLeft = Math.max(0, Math.min(startLeft + dx, window.innerWidth - btn.offsetWidth));
+            let newTop = Math.max(0, Math.min(startTop + dy, window.innerHeight - btn.offsetHeight));
+
+            btn.style.left = newLeft + "px";
+            btn.style.top = newTop + "px";
+            btn.style.right = "auto";
+            btn.style.bottom = "auto";
+        });
+
+        btn.addEventListener("pointerup", function(e) {
+            if (!isDragging) return;
+            isDragging = false;
+            btn.classList.remove("dragging");
+            try { btn.releasePointerCapture(e.pointerId); } catch(err) {}
+        });
+
+        btn.addEventListener("click", function() {
+            if (wasMoved) {
+                wasMoved = false;
+                return;
+            }
+            toggleAIChat();
+        });
+    }
+
+    // Toggle Chat Window
+    window.toggleAIChat = function() {
+        const chatBox = document.getElementById("aiChatBox");
+        if (!chatBox) return;
+
+        if (chatBox.style.display === "flex") {
+            chatBox.style.display = "none";
+        } else {
+            chatBox.style.display = "flex";
+            setTimeout(() => {
+                const inp = document.getElementById("aiChatInput");
+                if (inp) inp.focus();
+            }, 100);
+        }
+    };
+
+    // Keyboard Handler (Enter = Send, Shift+Enter = Newline)
+    window.handleAIEnter = function(event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            sendAIMessage();
+        }
+    };
+
+    // Quick Inquiry Trigger
+    window.askAIQuestion = function(question) {
+        const input = document.getElementById("aiChatInput");
+        if (!input) return;
+        input.value = question;
+        sendAIMessage();
+    };
+
+    // Safe DOM Message Construction (XSS Protected - Safe DOM nodes)
+    window.addAIMessage = function(message, type) {
+        const messages = document.getElementById("aiChatMessages");
+        if (!messages) return;
+
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "ai-message " + type;
+
+        // Treat all message content as untrusted; build DOM nodes safely
+        const rawMessage = String(message ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+        const lines = rawMessage.split("\n");
+
+        lines.forEach((line, lineIndex) => {
+            let processedLine = line.replace(/\\([*_])/g, "$1");
+            processedLine = processedLine.replace(/^#{1,6}\s*/, "");
+            processedLine = processedLine.replace(/^\s*[*-]\s+/, "• ");
+            if (/^\s*\*+\s*$/.test(processedLine)) {
+                processedLine = "";
+            }
+
+            // Parse bold markdown safely
+            const parts = processedLine.split(/(\*\*.*?\*\*)/g);
+            parts.forEach(part => {
+                if (part.startsWith("**") && part.endsWith("**") && part.length >= 4) {
+                    const boldContent = part.slice(2, -2);
+                    if (boldContent.length > 0) {
+                        const strong = document.createElement("strong");
+                        strong.textContent = boldContent;
+                        messageDiv.appendChild(strong);
+                    }
+                } else if (part.length > 0) {
+                    messageDiv.appendChild(document.createTextNode(part));
+                }
+            });
+
+            if (lineIndex < lines.length - 1) {
+                messageDiv.appendChild(document.createElement("br"));
+            }
+        });
+
+        messages.appendChild(messageDiv);
+        messages.scrollTop = messages.scrollHeight;
+        return messageDiv;
+    };
+
+    // Send AI Message Function
+    window.sendAIMessage = async function() {
+        const input = document.getElementById("aiChatInput");
+        if (!input) return;
+
+        const message = input.value.trim();
+        if (!message) return;
+
+        // Render user message
+        addAIMessage(message, "user");
+        input.value = "";
+        input.style.height = "auto";
+
+        // Display loading bubble
+        const messages = document.getElementById("aiChatMessages");
+        const loadingDiv = document.createElement("div");
+        loadingDiv.className = "ai-message bot loading";
+        loadingDiv.id = "aiLoadingIndicator";
+        loadingDiv.appendChild(document.createTextNode("🤔 Analyzing clinical patient data..."));
+        messages.appendChild(loadingDiv);
+        messages.scrollTop = messages.scrollHeight;
+
+        const sendBtn = document.getElementById("aiSendButton");
+        if (sendBtn) sendBtn.disabled = true;
+
+        try {
+            const response = await fetch("/ai_assistant", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": aiCsrfToken
+                },
+                body: JSON.stringify({
+                    message: message,
+                    patient_id: aiPatientId,
+                    disease_type: aiDiseaseType,
+                    csrf_token: aiCsrfToken
+                })
+            });
+
+            // Remove loading indicator
+            const currentLoader = document.getElementById("aiLoadingIndicator");
+            if (currentLoader && currentLoader.parentNode) {
+                currentLoader.parentNode.removeChild(currentLoader);
+            }
+
+            const contentType = response.headers.get("content-type") || "";
+            let data;
+            if (contentType.includes("application/json")) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                data = { error: text || `HTTP ${response.status}` };
+            }
+
+            if (data && data.reply) {
+                addAIMessage(data.reply, "bot");
+            } else if (data && data.error) {
+                addAIMessage("⚠️ " + data.error, "bot");
+            } else {
+                addAIMessage("⚠️ The AI assistant could not formulate a response. Please retry.", "bot");
+            }
+
+        } catch (error) {
+            const currentLoader = document.getElementById("aiLoadingIndicator");
+            if (currentLoader && currentLoader.parentNode) {
+                currentLoader.parentNode.removeChild(currentLoader);
+            }
+            addAIMessage("⚠️ Connection Error: Unable to reach the server. Please check your network and retry.", "bot");
+        } finally {
+            if (sendBtn) sendBtn.disabled = false;
+        }
+    };
+})();
+</script>

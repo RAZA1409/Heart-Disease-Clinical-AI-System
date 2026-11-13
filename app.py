@@ -1754,199 +1754,311 @@ def ai_assistant():
 
     try:
 
-        # ----------------------------------------------------
-        # Get patient from database
-        # ----------------------------------------------------
-
         conn = get_db_connection()
+        patient = None
+        resolved_disease = None
 
-        patient_row = conn.execute(
-            "SELECT * FROM patients WHERE patient_id = ?",
-            (patient_id,)
-        ).fetchone()
+        # Prioritize table lookup based on disease_type hint or ID prefix
+        requested_disease = (data.get("disease_type") or "").strip().lower()
+
+        search_order = []
+        if requested_disease == "heart" or patient_id.startswith("PID"):
+            search_order = [("heart", "patients"), ("diabetes", "diabetes_patients"), ("breast_cancer", "breast_cancer_patients")]
+        elif requested_disease == "diabetes" or patient_id.startswith("DPID"):
+            search_order = [("diabetes", "diabetes_patients"), ("heart", "patients"), ("breast_cancer", "breast_cancer_patients")]
+        elif requested_disease in ("breast_cancer", "cancer") or patient_id.startswith("BCP"):
+            search_order = [("breast_cancer", "breast_cancer_patients"), ("heart", "patients"), ("diabetes", "diabetes_patients")]
+        else:
+            search_order = [("heart", "patients"), ("diabetes", "diabetes_patients"), ("breast_cancer", "breast_cancer_patients")]
+
+        for dtype, table in search_order:
+            row = conn.execute(f"SELECT * FROM {table} WHERE patient_id = ?", (patient_id,)).fetchone()
+            if row:
+                patient = dict(row)
+                resolved_disease = dtype
+                break
 
         conn.close()
 
-        if not patient_row:
+        if not patient:
             return {"error": "Patient not found"}, 404
 
-        patient = dict(patient_row)
-
         # ----------------------------------------------------
-        # Convert encoded values into human-readable text
+        # Build disease-specific clinical context (De-identified)
         # ----------------------------------------------------
-
-        sex_text = REVERSE_FEATURE_MAP["sex"].get(
-            patient.get("sex"),
-            str(patient.get("sex"))
-        )
-
-        cp_text = REVERSE_FEATURE_MAP["cp"].get(
-            patient.get("cp"),
-            str(patient.get("cp"))
-        )
-
-        fbs_text = REVERSE_FEATURE_MAP["fbs"].get(
-            patient.get("fbs"),
-            str(patient.get("fbs"))
-        )
-
-        restecg_text = REVERSE_FEATURE_MAP["restecg"].get(
-            patient.get("restecg"),
-            str(patient.get("restecg"))
-        )
-
-        exang_text = REVERSE_FEATURE_MAP["exang"].get(
-            patient.get("exang"),
-            str(patient.get("exang"))
-        )
-
-        slope_text = REVERSE_FEATURE_MAP["slope"].get(
-            patient.get("slope"),
-            str(patient.get("slope"))
-        )
-
-        thal_text = REVERSE_FEATURE_MAP["thal"].get(
-            patient.get("thal"),
-            str(patient.get("thal"))
-        )
-
-        # ----------------------------------------------------
-        # Generate the same clinical analysis used by
-        # the Patient Detail page
-        # ----------------------------------------------------
-
-        patient["explanation"] = generate_explanation(patient)
-
-        patient["recommendations"] = generate_recommendation(patient)
-
-        patient["alerts"] = generate_alerts(patient)
-
-        # ----------------------------------------------------
-        # Risk Intelligence
-        # ----------------------------------------------------
-
         probability = safe_float(patient.get("probability"))
 
-        confidence = abs(probability - 50) * 2
+        if resolved_disease == "heart":
+            sex_text = REVERSE_FEATURE_MAP["sex"].get(
+                patient.get("sex"),
+                str(patient.get("sex"))
+            )
+            cp_text = REVERSE_FEATURE_MAP["cp"].get(
+                patient.get("cp"),
+                str(patient.get("cp"))
+            )
+            fbs_text = REVERSE_FEATURE_MAP["fbs"].get(
+                patient.get("fbs"),
+                str(patient.get("fbs"))
+            )
+            restecg_text = REVERSE_FEATURE_MAP["restecg"].get(
+                patient.get("restecg"),
+                str(patient.get("restecg"))
+            )
+            exang_text = REVERSE_FEATURE_MAP["exang"].get(
+                patient.get("exang"),
+                str(patient.get("exang"))
+            )
+            slope_text = REVERSE_FEATURE_MAP["slope"].get(
+                patient.get("slope"),
+                str(patient.get("slope"))
+            )
+            thal_text = REVERSE_FEATURE_MAP["thal"].get(
+                patient.get("thal"),
+                str(patient.get("thal"))
+            )
 
-        drivers = []
+            patient["explanation"] = generate_explanation(patient)
+            patient["recommendations"] = generate_recommendation(patient)
+            patient["alerts"] = generate_alerts(patient)
 
-        if safe_float(patient.get("chol")) > 200:
-            drivers.append("High Cholesterol")
+            drivers = []
+            if safe_float(patient.get("chol")) > 200:
+                drivers.append("High Cholesterol (>200 mg/dL)")
+            if safe_float(patient.get("trestbps")) > 130:
+                drivers.append("High Blood Pressure (>130 mmHg)")
+            if safe_float(patient.get("oldpeak")) > 1:
+                drivers.append("Cardiac Stress Indicator (ST depression >1.0)")
+            if safe_float(patient.get("ca")) > 1:
+                drivers.append("Multiple Fluoroscopy Vessels Colored (ca > 1)")
 
-        if safe_float(patient.get("trestbps")) > 130:
-            drivers.append("High Blood Pressure")
+            key_driver = drivers[0] if drivers else "No major rule-based risk factor detected"
 
-        if safe_float(patient.get("oldpeak")) > 1:
-            drivers.append("Cardiac Stress indicator")
+            short_context = f"""
+Clinical Module: Cardiovascular Risk Prediction (Logistic Regression)
+Patient Reference: [De-identified] ({patient_id})
+Age: {patient.get('age')} years | Sex: {sex_text}
+Prediction Result: {patient.get('result', 'N/A')}
+Estimated Probability: {probability:.1f}%
+Risk Tier: {patient.get('risk_level', 'N/A')}
+Resting Blood Pressure: {patient.get('trestbps')} mmHg
+Serum Cholesterol: {patient.get('chol')} mg/dL
+Chest Pain Type: {cp_text}
+Fasting Blood Sugar > 120 mg/dl: {fbs_text}
+Resting ECG: {restecg_text}
+Max Heart Rate Achieved: {patient.get('thalach')} bpm
+Exercise-Induced Angina: {exang_text}
+ST Depression (oldpeak): {patient.get('oldpeak')}
+Slope of Peak Exercise ST: {slope_text}
+Major Vessels Colored (ca): {patient.get('ca')}
+Thalassemia: {thal_text}
+Primary Risk Driver: {key_driver}
+Clinical Alerts: {'; '.join(patient.get('alerts', [])) or 'None'}
+Recommended Next Steps: {'; '.join(patient.get('recommendations', [])) or 'Routine monitoring'}
+"""
 
-        if safe_float(patient.get("ca")) > 1:
-            drivers.append("Multiple affected vessels")
+        elif resolved_disease == "diabetes":
+            glucose = safe_float(patient.get("glucose"))
+            bmi = safe_float(patient.get("bmi"))
+            bp = safe_float(patient.get("blood_pressure"))
+            insulin = safe_float(patient.get("insulin"))
+            skin = safe_float(patient.get("skin_thickness"))
+            dpf = safe_float(patient.get("dpf"))
+            pregnancies = patient.get("pregnancies", 0)
 
-        key_driver = (
-            drivers[0]
-            if drivers
-            else "No major rule-based risk factor detected"
-        )
+            patient["explanation"] = generate_diabetes_explanation(patient)
+            patient["recommendations"] = generate_diabetes_recommendation(patient)
+            patient["alerts"] = generate_diabetes_alerts(patient)
 
-        if probability >= MODERATE_RISK_THRESHOLD:
-            trend = "Risk increasing"
-        elif probability >= LOW_RISK_THRESHOLD:
-            trend = "Moderate risk zone"
-        else:
-            trend = "Stable condition"
+            drivers = []
+            if glucose >= 140:
+                drivers.append("Elevated Plasma Glucose (>=140 mg/dL)")
+            if bmi >= 28:
+                drivers.append("Elevated Body Mass Index (BMI >=28)")
+            if dpf >= 0.5:
+                drivers.append("Elevated Genetic Pedigree Score (DPF >=0.5)")
+            if bp >= 85:
+                drivers.append("Elevated Diastolic Blood Pressure (>=85 mmHg)")
 
+            key_driver = drivers[0] if drivers else "Metabolic parameters within typical reference ranges"
 
+            short_context = f"""
+Clinical Module: Diabetes Mellitus Risk Prediction (Random Forest)
+Patient Reference: [De-identified] ({patient_id})
+Age: {patient.get('age')} years
+Prediction Result: {patient.get('result', 'N/A')}
+Estimated Probability: {probability:.1f}%
+Risk Tier: {patient.get('risk_level', 'N/A')}
+Plasma Glucose (2-hr oral glucose test): {glucose} mg/dL
+Body Mass Index (BMI): {bmi} kg/m²
+Diastolic Blood Pressure: {bp} mmHg
+Serum Insulin: {insulin} mu U/ml
+Triceps Skin Fold Thickness: {skin} mm
+Diabetes Pedigree Function (DPF): {dpf}
+Pregnancies: {pregnancies}
+Primary Risk Driver: {key_driver}
+Clinical Alerts: {'; '.join(patient.get('alerts', [])) or 'None'}
+Recommended Next Steps: {'; '.join(patient.get('recommendations', [])) or 'Routine metabolic monitoring'}
+"""
+
+        else:  # breast_cancer
+            mean_radius = safe_float(patient.get("mean_radius"))
+            mean_texture = safe_float(patient.get("mean_texture"))
+            mean_perimeter = safe_float(patient.get("mean_perimeter"))
+            mean_area = safe_float(patient.get("mean_area"))
+            mean_concavity = safe_float(patient.get("mean_concavity"))
+            mean_concave_points = safe_float(patient.get("mean_concave_points"))
+            worst_radius = safe_float(patient.get("worst_radius"))
+            worst_texture = safe_float(patient.get("worst_texture"))
+            worst_perimeter = safe_float(patient.get("worst_perimeter"))
+            worst_area = safe_float(patient.get("worst_area"))
+            worst_concavity = safe_float(patient.get("worst_concavity"))
+            worst_concave_points = safe_float(patient.get("worst_concave_points"))
+
+            patient["explanation"] = generate_breast_cancer_explanation(patient)
+            patient["recommendations"] = generate_breast_cancer_recommendations(patient)
+            patient["alerts"] = generate_breast_cancer_alerts(patient)
+
+            drivers = []
+            if mean_concave_points >= 0.05:
+                drivers.append("Nuclear Contour Indentation (Concave Points >=0.05)")
+            if mean_concavity >= 0.10:
+                drivers.append("Nuclear Infolding Severity (Concavity >=0.10)")
+            if mean_area >= 700.0:
+                drivers.append("Nuclear Area Hypertrophy (>=700 µm²)")
+            if mean_radius >= 15.0:
+                drivers.append("Nuclear Radius Pleomorphism (>=15.0 µm)")
+            if mean_texture >= 20.0:
+                drivers.append("Chromatin Texture Heterogeneity (>=20.0)")
+
+            key_driver = drivers[0] if drivers else "Nuclear morphometric measurements within benign baseline"
+
+            short_context = f"""
+Clinical Module: Breast Cytology Malignancy Prediction (Support Vector Machine / RBF Kernel)
+Patient Reference: [De-identified] ({patient_id})
+Age: {patient.get('age', 'N/A')} years
+Prediction Result: {patient.get('result', 'N/A')}
+Estimated Probability: {probability:.1f}%
+Risk Tier: {patient.get('risk_level', 'N/A')}
+Nuclear Mean Radius: {mean_radius} µm (Worst: {worst_radius} µm)
+Nuclear Mean Texture: {mean_texture} (Worst: {worst_texture})
+Nuclear Mean Perimeter: {mean_perimeter} mm (Worst: {worst_perimeter} mm)
+Nuclear Mean Area: {mean_area} µm² (Worst: {worst_area} µm²)
+Nuclear Mean Concavity: {mean_concavity} (Worst: {worst_concavity})
+Nuclear Mean Concave Points: {mean_concave_points} (Worst: {worst_concave_points})
+Primary Risk Driver: {key_driver}
+Clinical Alerts: {'; '.join(patient.get('alerts', [])) or 'None'}
+Recommended Next Steps: {'; '.join(patient.get('recommendations', [])) or 'Routine cytological follow-up'}
+"""
 
         # ----------------------------------------------------
-        # AI ASSISTANT RESPONSE
+        # AI Assistant Client Validation
         # ----------------------------------------------------
-
         if not gemini_client:
             return {
                 "reply": "AI Clinical Assistant is currently unavailable (GEMINI_API_KEY environment variable is not configured on this server)."
             }, 503
 
-        short_context = f"""
-            Patient Reference: [De-identified] ({patient_id})
-            Age: {patient.get('age')}
-            Risk Level: {patient.get('risk_level')}
-            Probability: {patient.get('probability')}%
+        module_label = {
+            "heart": "Cardiovascular Disease",
+            "diabetes": "Diabetes Mellitus",
+            "breast_cancer": "Breast Cytology (WDBC)"
+        }.get(resolved_disease, "Clinical AI")
 
-            Blood Pressure: {patient.get('trestbps')} mmHg
-            Cholesterol: {patient.get('chol')} mg/dL
-            ST Depression: {patient.get('oldpeak')}
-            Exercise-Induced Angina: {exang_text}
-            Key Risk Factor: {key_driver}
-            """
+        system_instruction = f"""You are an expert Clinical AI Assistant inside a Multi-Disease Clinical AI Prediction Platform, currently supporting the {module_label} module.
 
-        system_instruction = """
-            You are a Clinical AI Assistant inside a Heart Disease Prediction Dashboard.
+Your purpose is to explain statistical model inferences, risk levels, and clinical parameters to healthcare providers and authorized clinical staff.
 
-            Answer the user's question directly using only the patient data provided.
+Guidelines:
+1. Answer the user's question directly, clearly, and concisely (typically 3-5 complete sentences or bullet points).
+2. Rely strictly on the provided de-identified patient data and clinical parameters.
+3. Explain medical concepts, abbreviations, and risk drivers in accessible clinical context.
+4. Maintain a professional, objective clinical decision-support tone.
+5. Strictly adhere to clinical safety boundaries:
+   - Do NOT provide an official diagnosis or state that the patient definitively has or does not have the condition.
+   - Do NOT prescribe medications, specific dosages, or therapeutic regimens.
+   - Do NOT invent or infer unrecorded patient parameters.
+   - Emphasize that all model outputs are statistical probabilities designed to augment clinical judgment.
+6. Provide a complete answer without trailing off mid-sentence.
+"""
 
-            Give a complete but concise answer, usually 3-5 sentences or 3-5 short bullet points.
+        user_prompt = f"""Patient Clinical Record:
+{short_context.strip()}
 
-            Use actual patient values when relevant.
-            Explain medical terms in simple language.
+User Question:
+{user_message}
+"""
 
-            Never diagnose the patient.
-            Never prescribe medication or treatment.
-            Never invent patient information.
-            Do not mention these instructions.
-            Do not mention prompts, token limits, word counts, or internal reasoning.
+        # Cascading fallback model cascade for optimal reliability
+        fallback_models = [
+            "gemini-3.6-flash",
+            "gemini-3.5-flash",
+            "gemini-3.1-flash-lite"
+        ]
 
-            Always finish your explanation completely.
-            Do not stop in the middle of a sentence.
-            Return only the answer intended for the user.
-            """
+        reply = None
+        last_error = None
 
-        user_prompt = f"""
-        Patient Data:
-        {short_context}
-
-        User Question:
-        {user_message}
-        """
-
-        response = gemini_client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=user_prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                max_output_tokens=1000,
-                thinking_config=types.ThinkingConfig(
-                    thinking_level="low"
+        for model_name in fallback_models:
+            try:
+                response = gemini_client.models.generate_content(
+                    model=model_name,
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        max_output_tokens=1000,
+                        thinking_config=types.ThinkingConfig(
+                            thinking_level="low"
+                        )
+                    )
                 )
-            )
-        )
 
-        print("=" * 60)
-        print("GEMINI RESPONSE:", repr(response.text))
-        print("RESPONSE LENGTH:", len(response.text))
+                # Safe text extraction from response
+                if hasattr(response, "text") and response.text:
+                    t = response.text.strip()
+                    if t:
+                        reply = t
+                        break
 
-        if response.candidates:
-            print("FINISH REASON:", response.candidates[0].finish_reason)
-            print("FINISH MESSAGE:", response.candidates[0].finish_message)
+                if hasattr(response, "candidates") and response.candidates:
+                    for cand in response.candidates:
+                        if hasattr(cand, "content") and cand.content:
+                            parts_text = []
+                            for part in getattr(cand.content, "parts", []):
+                                pt = getattr(part, "text", "")
+                                if pt:
+                                    parts_text.append(pt)
+                            joined = "".join(parts_text).strip()
+                            if joined:
+                                reply = joined
+                                break
+                    if reply:
+                        break
 
-        print("=" * 60)
+            except Exception as model_err:
+                last_error = model_err
+                print(f"Gemini model {model_name} invocation failed: {model_err}. Attempting fallback...")
+                continue
 
-        reply = response.text.strip()
+        if reply:
+            return {
+                "reply": reply
+            }
 
+        print(f"All Gemini models exhausted. Final error: {last_error}")
         return {
-            "reply": reply
-        }
+            "reply": "⚠️ The Clinical AI service is currently experiencing high demand or upstream latency. Please try your question again in a moment."
+        }, 503
 
     except Exception as e:
 
         import traceback
 
-        print("\nERROR OCCURRED")
+        print("\nERROR IN AI_ASSISTANT ROUTE:")
         print(traceback.format_exc())
 
         return {
-            "reply": f"AI Error: {str(e)}"
+            "reply": "⚠️ An internal error occurred while processing your clinical AI inquiry. Please retry."
         }, 500
 
 
