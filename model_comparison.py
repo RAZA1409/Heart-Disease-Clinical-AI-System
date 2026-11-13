@@ -1,5 +1,17 @@
 # ============================================================
-# MODEL COMPARISON & BEST MODEL SELECTION
+# AUTHORITATIVE HEART DISEASE MODEL TRAINING & SELECTION PIPELINE
+# Production Training Script: Multi-Model Evaluation & Best Model Selection
+#
+# Dataset: Heart_Disease_Cleaned.csv (270 records, 13 features)
+# Split: 80/20 train/test split with random_state=42 (unstratified)
+# Preprocessing: StandardScaler fitted strictly on training data
+# Candidate Algorithms: LogisticRegression, SVC (RBF), RandomForestClassifier
+#
+# Production Artifacts Generated:
+#   - models/best_model.pkl       (Selected best model: Logistic Regression)
+#   - models/scaler.pkl           (StandardScaler fitted on training features)
+#   - models/feature_columns.pkl  (List of 13 input clinical feature names)
+#   - models/model_info.pkl       (Evaluation metrics, ROC/PRF data, loss, confusion matrix)
 # ============================================================
 
 import pandas as pd
