@@ -181,7 +181,7 @@ class Phase2HeartDiseaseModuleTests(unittest.TestCase):
             "patient_id": p["patient_id"],
             "csrf_token": "valid_csrf"
         })
-        self.assertIn(res.status_code, (200, 500))  # 200 if online, 500 if API quota/network
+        self.assertIn(res.status_code, (200, 500, 503))  # 200 if online, 500 or 503 if API quota/network
         data = res.get_json()
         self.assertTrue("reply" in data or "error" in data)
 

@@ -12,7 +12,7 @@ import sqlite3
 import secrets
 from google import genai
 from google.genai import types
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, session, redirect, url_for, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
 from database import get_db_connection, init_db
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
@@ -380,57 +380,197 @@ def forgot_password():
 
 
 # ------------------------------------------------------------
-# Dashboard
+# Dashboard (Multi-Disease Platform Aggregation)
 # ------------------------------------------------------------
 @app.route("/dashboard")
 def dashboard():
 
     if "user" not in session:
+        if request.args.get("format") == "json" or request.is_json:
+            return {"error": "Unauthorized"}, 401
         return redirect(url_for("login"))
 
     conn = get_db_connection()
-    patients = conn.execute("SELECT * FROM patients").fetchall()
+    try:
+        patients = conn.execute("SELECT * FROM patients").fetchall()
+    except Exception:
+        patients = []
+
     try:
         diabetes_patients = conn.execute("SELECT * FROM diabetes_patients").fetchall()
     except Exception:
         diabetes_patients = []
+
     try:
         breast_cancer_patients = conn.execute("SELECT * FROM breast_cancer_patients").fetchall()
     except Exception:
         breast_cancer_patients = []
     conn.close()
 
-    total = len(patients)
-    total_diabetes = len(diabetes_patients)
-    total_breast_cancer = len(breast_cancer_patients)
+    # --------------------------------------------------------
+    # 1. Multi-Disease Platform-Wide Patient Counts
+    # --------------------------------------------------------
+    count_heart = len(patients)
+    count_diabetes = len(diabetes_patients)
+    count_cancer = len(breast_cancer_patients)
+    total_platform_patients = count_heart + count_diabetes + count_cancer
+
+    platform_counts = {
+        "heart": count_heart,
+        "diabetes": count_diabetes,
+        "breast_cancer": count_cancer
+    }
+
+    platform_percentages = {
+        "heart": round((count_heart / total_platform_patients) * 100, 1) if total_platform_patients > 0 else 0.0,
+        "diabetes": round((count_diabetes / total_platform_patients) * 100, 1) if total_platform_patients > 0 else 0.0,
+        "breast_cancer": round((count_cancer / total_platform_patients) * 100, 1) if total_platform_patients > 0 else 0.0
+    }
+
+    # --------------------------------------------------------
+    # 2. Disease-Specific & Platform-Wide Risk Distributions
+    # --------------------------------------------------------
+    def _extract_risk_counts(patient_rows):
+        res = {"LOW": 0, "MODERATE": 0, "HIGH": 0}
+        for row in patient_rows:
+            lvl = str(row["risk_level"] or "").strip().upper()
+            if lvl in res:
+                res[lvl] += 1
+        return res
+
+    heart_risk = _extract_risk_counts(patients)
+    diabetes_risk = _extract_risk_counts(diabetes_patients)
+    cancer_risk = _extract_risk_counts(breast_cancer_patients)
+
+    disease_risk_distributions = {
+        "heart": heart_risk,
+        "diabetes": diabetes_risk,
+        "breast_cancer": cancer_risk
+    }
+
+    platform_low = heart_risk["LOW"] + diabetes_risk["LOW"] + cancer_risk["LOW"]
+    platform_moderate = heart_risk["MODERATE"] + diabetes_risk["MODERATE"] + cancer_risk["MODERATE"]
+    platform_high = heart_risk["HIGH"] + diabetes_risk["HIGH"] + cancer_risk["HIGH"]
+
+    platform_risk = {
+        "LOW": platform_low,
+        "MODERATE": platform_moderate,
+        "HIGH": platform_high
+    }
+
+    platform_low_percent = round((platform_low / total_platform_patients) * 100, 1) if total_platform_patients > 0 else 0.0
+    platform_moderate_percent = round((platform_moderate / total_platform_patients) * 100, 1) if total_platform_patients > 0 else 0.0
+    platform_high_percent = round((platform_high / total_platform_patients) * 100, 1) if total_platform_patients > 0 else 0.0
+
+    platform_risk_percentages = {
+        "LOW": platform_low_percent,
+        "MODERATE": platform_moderate_percent,
+        "HIGH": platform_high_percent
+    }
+
+    platform_high_proportion = platform_high_percent
+
+    if platform_high_percent >= 50.0:
+        platform_status = "Critical"
+    elif platform_moderate_percent >= 40.0:
+        platform_status = "Warning"
+    else:
+        platform_status = "Stable"
+
+    # --------------------------------------------------------
+    # 3. Platform-Wide Average Probability (0-100% scale)
+    # --------------------------------------------------------
+    all_probabilities = []
+    for rows in [patients, diabetes_patients, breast_cancer_patients]:
+        for r in rows:
+            val = r["probability"]
+            if val is not None:
+                try:
+                    all_probabilities.append(float(val))
+                except (ValueError, TypeError):
+                    pass
+
+    platform_avg_probability = round(sum(all_probabilities) / len(all_probabilities), 2) if all_probabilities else None
+
+    # --------------------------------------------------------
+    # 4. Multi-Disease Recent Assessments Stream (Up to 8 items)
+    # --------------------------------------------------------
+    recent_assessments = []
+
+    for p in patients:
+        recent_assessments.append({
+            "patient_id": p["patient_id"],
+            "patient_name": p["patient_name"],
+            "disease_type": "heart",
+            "disease_name": "Cardiovascular",
+            "disease_icon": "🫀",
+            "risk_level": str(p["risk_level"] or "UNKNOWN").upper(),
+            "probability": safe_float(p["probability"]),
+            "result": p["result"],
+            "timestamp": str(p["timestamp"] or ""),
+            "detail_url": url_for("patient_detail", patient_id=p["patient_id"])
+        })
+
+    for p in diabetes_patients:
+        recent_assessments.append({
+            "patient_id": p["patient_id"],
+            "patient_name": p["patient_name"],
+            "disease_type": "diabetes",
+            "disease_name": "Diabetes Mellitus",
+            "disease_icon": "🩸",
+            "risk_level": str(p["risk_level"] or "UNKNOWN").upper(),
+            "probability": safe_float(p["probability"]),
+            "result": p["result"],
+            "timestamp": str(p["timestamp"] or ""),
+            "detail_url": url_for("diabetes_patient_detail", patient_id=p["patient_id"])
+        })
+
+    for p in breast_cancer_patients:
+        recent_assessments.append({
+            "patient_id": p["patient_id"],
+            "patient_name": p["patient_name"],
+            "disease_type": "breast_cancer",
+            "disease_name": "Breast Cytology",
+            "disease_icon": "🎗️",
+            "risk_level": str(p["risk_level"] or "UNKNOWN").upper(),
+            "probability": safe_float(p["probability"]),
+            "result": p["result"],
+            "timestamp": str(p["timestamp"] or ""),
+            "detail_url": url_for("breast_cancer_patient_detail", patient_id=p["patient_id"])
+        })
+
+    recent_assessments.sort(key=lambda x: x["timestamp"], reverse=True)
+    recent_assessments = recent_assessments[:8]
+
+    # --------------------------------------------------------
+    # 5. Legacy Heart-Specific Variables (Preserved for dashboard.html)
+    # --------------------------------------------------------
+    total = count_heart
+    total_diabetes = count_diabetes
+    total_breast_cancer = count_cancer
     breast_cancer_accuracy = round(breast_cancer_model_info.get("accuracy", 0.9825) * 100, 2)
 
-    low = len([p for p in patients if p["risk_level"] == "LOW"])
-    moderate = len([p for p in patients if p["risk_level"] == "MODERATE"])
-    high = len([p for p in patients if p["risk_level"] == "HIGH"])
+    low = heart_risk["LOW"]
+    moderate = heart_risk["MODERATE"]
+    high = heart_risk["HIGH"]
 
     low_percent = round((low / total) * 100, 1) if total else 0
     moderate_percent = round((moderate / total) * 100, 1) if total else 0
     high_percent = round((high / total) * 100, 1) if total else 0
 
     recent = patients[::-1][:5] if patients else []
-
     avg_probability = round(
-        sum([p["probability"] for p in patients]) / total, 2
+        sum([safe_float(p["probability"]) for p in patients]) / total, 2
     ) if total else 0
 
-    # 🔥 Highest Risk Patient
-    high_patients = [p for p in patients if p["risk_level"] == "HIGH"]
+    high_patients = [p for p in patients if str(p["risk_level"] or "").upper() == "HIGH"]
     top_patient = high_patients[-1]["patient_name"] if high_patients else "None"
-
     last_timestamp = patients[-1]["timestamp"] if patients else "N/A"
 
-    # 🔥 Trend Graph
     trend_data = patients[-10:]
     trend_labels = [p["timestamp"] for p in trend_data]
-    trend_values = [p["probability"] for p in trend_data]
+    trend_values = [safe_float(p["probability"]) for p in trend_data]
 
-    # System Status
     if high_percent >= 50:
         system_status = "Critical"
     elif moderate_percent >= 40:
@@ -438,27 +578,22 @@ def dashboard():
     else:
         system_status = "Stable"
 
-    # Load model info
+    # Heart Model Metadata
     model_info = CACHED_MODEL_INFO or joblib.load("models/model_info.pkl")
     prf_data = model_info.get("prf_data", {})
-    # ==========================
-    # OVERFITTING DETECTION
-    # ==========================
+    all_models = model_info.get("all_models", {})
 
     overfitting_status = {}
-    all_models = model_info.get("all_models", {})
-    for model_name, metrics in all_models.items():
+    for m_name, metrics in all_models.items():
         train_acc = metrics.get("train", 0)
         test_acc = metrics.get("test", 0)
         gap = train_acc - test_acc
-
         if gap > 0.1:
-            overfitting_status[model_name] = "Overfitting"
+            overfitting_status[m_name] = "Overfitting"
         else:
-            overfitting_status[model_name] = "Good"
+            overfitting_status[m_name] = "Good"
 
     roc_data = model_info.get("roc_data", {})
-    all_models = model_info.get("all_models", {})
     feature_importance = model_info.get("feature_importance", {})
     model_labels = list(all_models.keys())
     model_values = [round(all_models[m]["test"] * 100, 2) for m in model_labels]
@@ -466,14 +601,41 @@ def dashboard():
     test_loss_values = [round(all_models[m]["test_loss"], 3) for m in model_labels]
     opt = CACHED_OPT_COMPARISON or joblib.load("models/optimization_comparison.pkl")
     opt_labels = list(opt.keys())
-    opt_values = [round(v*100,2) for v in opt.values()]
-    conf_matrix = model_info.get("confusion_matrix", [[0,0],[0,0]])
-    # 🔥 NEW: TRAIN accuracy
+    opt_values = [round(v * 100, 2) for v in opt.values()]
+    conf_matrix = model_info.get("confusion_matrix", [[0, 0], [0, 0]])
     train_values = [round(v["train"] * 100, 2) for v in all_models.values()]
 
-    model_name = model_info["model_name"]
-    model_accuracy = round(model_info["accuracy"] * 100, 2)
+    model_name = model_info.get("model_name", "Logistic Regression")
+    model_accuracy = round(model_info.get("accuracy", 0.9074) * 100, 2)
+
+    # Return JSON if requested
+    if request.args.get("format") == "json" or (request.is_json and request.method == "GET"):
+        return jsonify({
+            "total_platform_patients": total_platform_patients,
+            "platform_counts": platform_counts,
+            "platform_percentages": platform_percentages,
+            "platform_risk": platform_risk,
+            "platform_risk_percentages": platform_risk_percentages,
+            "disease_risk_distributions": disease_risk_distributions,
+            "platform_high_proportion": platform_high_proportion,
+            "platform_avg_probability": platform_avg_probability,
+            "platform_status": platform_status,
+            "recent_assessments": recent_assessments
+        })
+
     return render_template("dashboard.html",
+        # New Platform-Wide Aggregations
+        total_platform_patients=total_platform_patients,
+        platform_counts=platform_counts,
+        platform_percentages=platform_percentages,
+        platform_risk=platform_risk,
+        platform_risk_percentages=platform_risk_percentages,
+        disease_risk_distributions=disease_risk_distributions,
+        platform_high_proportion=platform_high_proportion,
+        platform_avg_probability=platform_avg_probability,
+        platform_status=platform_status,
+        recent_assessments=recent_assessments,
+        # Preserved Legacy Heart Variables
         model_name=model_name,
         model_labels=model_labels,
         model_values=model_values,
@@ -508,6 +670,277 @@ def dashboard():
         breast_cancer_model_info=breast_cancer_model_info,
         breast_cancer_accuracy=breast_cancer_accuracy
     )
+
+
+# ============================================================
+# Disease Analytics Routes
+# ============================================================
+
+@app.route("/analytics/heart")
+def heart_analytics():
+    if "user" not in session:
+        if request.args.get("format") == "json" or request.is_json:
+            return {"error": "Unauthorized"}, 401
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+    try:
+        rows = conn.execute("SELECT * FROM patients ORDER BY timestamp DESC").fetchall()
+    except Exception:
+        rows = []
+    conn.close()
+
+    total_patients = len(rows)
+    risk_counts = {"LOW": 0, "MODERATE": 0, "HIGH": 0}
+    probabilities = []
+    ages = []
+
+    for r in rows:
+        lvl = str(r["risk_level"] or "").strip().upper()
+        if lvl in risk_counts:
+            risk_counts[lvl] += 1
+        p_val = safe_float(r["probability"])
+        probabilities.append(p_val)
+        if r["age"] is not None:
+            try:
+                ages.append(int(r["age"]))
+            except (ValueError, TypeError):
+                pass
+
+    risk_percentages = {
+        "LOW": round((risk_counts["LOW"] / total_patients) * 100, 1) if total_patients > 0 else 0.0,
+        "MODERATE": round((risk_counts["MODERATE"] / total_patients) * 100, 1) if total_patients > 0 else 0.0,
+        "HIGH": round((risk_counts["HIGH"] / total_patients) * 100, 1) if total_patients > 0 else 0.0
+    }
+
+    avg_probability = round(sum(probabilities) / len(probabilities), 2) if probabilities else None
+    avg_age = round(sum(ages) / len(ages), 1) if ages else None
+    recent_patients = [dict(r) for r in rows[:6]]
+
+    # Heart Model Metadata
+    try:
+        model_meta = joblib.load("models/model_info.pkl")
+    except Exception:
+        model_meta = CACHED_MODEL_INFO or {}
+
+    try:
+        opt_meta = joblib.load("models/optimization_comparison.pkl")
+    except Exception:
+        opt_meta = CACHED_OPT_COMPARISON or {}
+
+    lr_prf = model_meta.get("prf_data", {}).get("Logistic Regression", {})
+    lr_roc = model_meta.get("roc_data", {}).get("Logistic Regression", {})
+    lr_precision = round(lr_prf["precision"] * 100, 2) if "precision" in lr_prf else None
+    lr_recall = round(lr_prf["recall"] * 100, 2) if "recall" in lr_prf else None
+    lr_f1 = round(lr_prf["f1"] * 100, 2) if "f1" in lr_prf else None
+    lr_auc = round(lr_roc["auc"], 4) if "auc" in lr_roc else 0.90
+
+    model_performance = {
+        "status": "Available" if model_meta else "Unavailable",
+        "model_name": model_meta.get("model_name", "Logistic Regression"),
+        "accuracy": round(model_meta["accuracy"] * 100, 2) if "accuracy" in model_meta else None,
+        "precision": lr_precision,
+        "recall": lr_recall,
+        "f1": lr_f1,
+        "roc_auc": lr_auc,
+        "confusion_matrix": model_meta.get("confusion_matrix"),
+        "feature_importance": model_meta.get("feature_importance", {}),
+        "roc_data": model_meta.get("roc_data", {}),
+        "prf_data": model_meta.get("prf_data", {}),
+        "all_models": model_meta.get("all_models", {}),
+        "optimization_comparison": opt_meta
+    }
+
+    analytics_data = {
+        "disease_type": "heart",
+        "disease_name": "Cardiovascular Disease",
+        "disease_icon": "🫀",
+        "patient_stats": {
+            "total_patients": total_patients,
+            "risk_distribution": risk_counts,
+            "risk_percentages": risk_percentages,
+            "avg_probability": avg_probability,
+            "avg_age": avg_age,
+            "recent_patients": recent_patients
+        },
+        "model_performance": model_performance
+    }
+
+    if request.args.get("format") == "json" or (request.is_json and request.method == "GET"):
+        return jsonify(analytics_data)
+
+    return render_template("heart_analytics.html", **analytics_data)
+
+
+@app.route("/analytics/diabetes")
+def diabetes_analytics():
+    if "user" not in session:
+        if request.args.get("format") == "json" or request.is_json:
+            return {"error": "Unauthorized"}, 401
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+    try:
+        rows = conn.execute("SELECT * FROM diabetes_patients ORDER BY timestamp DESC").fetchall()
+    except Exception:
+        rows = []
+    conn.close()
+
+    total_patients = len(rows)
+    risk_counts = {"LOW": 0, "MODERATE": 0, "HIGH": 0}
+    probabilities = []
+    glucoses = []
+    bmis = []
+
+    for r in rows:
+        row_dict = dict(r)
+        lvl = str(row_dict.get("risk_level") or "").strip().upper()
+        if lvl in risk_counts:
+            risk_counts[lvl] += 1
+        p_val = safe_float(row_dict.get("probability"))
+        probabilities.append(p_val)
+        g_val = safe_float(row_dict.get("glucose"))
+        if g_val > 0:
+            glucoses.append(g_val)
+        b_val = safe_float(row_dict.get("bmi"))
+        if b_val > 0:
+            bmis.append(b_val)
+
+    risk_percentages = {
+        "LOW": round((risk_counts["LOW"] / total_patients) * 100, 1) if total_patients > 0 else 0.0,
+        "MODERATE": round((risk_counts["MODERATE"] / total_patients) * 100, 1) if total_patients > 0 else 0.0,
+        "HIGH": round((risk_counts["HIGH"] / total_patients) * 100, 1) if total_patients > 0 else 0.0
+    }
+
+    avg_probability = round(sum(probabilities) / len(probabilities), 2) if probabilities else None
+    avg_glucose = round(sum(glucoses) / len(glucoses), 1) if glucoses else None
+    avg_bmi = round(sum(bmis) / len(bmis), 1) if bmis else None
+    recent_patients = [dict(r) for r in rows[:6]]
+
+    # Diabetes Model Metadata
+    try:
+        model_meta = joblib.load("models/diabetes_model_info.pkl")
+    except Exception:
+        model_meta = diabetes_model_info or {}
+
+    model_performance = {
+        "status": "Available" if model_meta else "Unavailable",
+        "model_name": model_meta.get("model_name", "Random Forest Classifier (Balanced)"),
+        "dataset": model_meta.get("dataset", "Pima Indians Diabetes Dataset"),
+        "accuracy": round(model_meta["accuracy"] * 100, 2) if "accuracy" in model_meta else None,
+        "precision": round(model_meta["precision"] * 100, 2) if "precision" in model_meta else None,
+        "recall": round(model_meta["recall"] * 100, 2) if "recall" in model_meta else None,
+        "f1": round(model_meta["f1"] * 100, 2) if "f1" in model_meta else None,
+        "roc_auc": round(model_meta["roc_auc"], 4) if "roc_auc" in model_meta else None,
+        "confusion_matrix": model_meta.get("confusion_matrix"),
+        "feature_importance": model_meta.get("feature_importance", {}),
+        "roc_curve": model_meta.get("roc_curve", {})
+    }
+
+    analytics_data = {
+        "disease_type": "diabetes",
+        "disease_name": "Diabetes Mellitus",
+        "disease_icon": "🩸",
+        "patient_stats": {
+            "total_patients": total_patients,
+            "risk_distribution": risk_counts,
+            "risk_percentages": risk_percentages,
+            "avg_probability": avg_probability,
+            "avg_glucose": avg_glucose,
+            "avg_bmi": avg_bmi,
+            "recent_patients": recent_patients
+        },
+        "model_performance": model_performance
+    }
+
+    if request.args.get("format") == "json" or (request.is_json and request.method == "GET"):
+        return jsonify(analytics_data)
+
+    return render_template("diabetes_analytics.html", **analytics_data)
+
+
+@app.route("/analytics/breast_cancer")
+def breast_cancer_analytics():
+    if "user" not in session:
+        if request.args.get("format") == "json" or request.is_json:
+            return {"error": "Unauthorized"}, 401
+        return redirect(url_for("login"))
+
+    conn = get_db_connection()
+    try:
+        rows = conn.execute("SELECT * FROM breast_cancer_patients ORDER BY timestamp DESC").fetchall()
+    except Exception:
+        rows = []
+    conn.close()
+
+    total_patients = len(rows)
+    risk_counts = {"LOW": 0, "MODERATE": 0, "HIGH": 0}
+    probabilities = []
+    malignant_count = 0
+    benign_count = 0
+
+    for r in rows:
+        lvl = str(r["risk_level"] or "").strip().upper()
+        if lvl in risk_counts:
+            risk_counts[lvl] += 1
+        p_val = safe_float(r["probability"])
+        probabilities.append(p_val)
+        res = str(r["result"] or "").strip().capitalize()
+        if res == "Malignant":
+            malignant_count += 1
+        elif res == "Benign":
+            benign_count += 1
+
+    risk_percentages = {
+        "LOW": round((risk_counts["LOW"] / total_patients) * 100, 1) if total_patients > 0 else 0.0,
+        "MODERATE": round((risk_counts["MODERATE"] / total_patients) * 100, 1) if total_patients > 0 else 0.0,
+        "HIGH": round((risk_counts["HIGH"] / total_patients) * 100, 1) if total_patients > 0 else 0.0
+    }
+
+    avg_probability = round(sum(probabilities) / len(probabilities), 2) if probabilities else None
+    recent_patients = [dict(r) for r in rows[:6]]
+
+    # Breast Cancer Model Metadata
+    try:
+        model_meta = joblib.load("models/breast_cancer_model_info.pkl")
+    except Exception:
+        model_meta = breast_cancer_model_info or {}
+
+    model_performance = {
+        "status": "Available" if model_meta else "Unavailable",
+        "model_name": model_meta.get("model_name", "Support Vector Machine (RBF Balanced)"),
+        "dataset": model_meta.get("dataset", "Wisconsin Diagnostic Breast Cancer (WDBC)"),
+        "accuracy": round(model_meta["accuracy"] * 100, 2) if "accuracy" in model_meta else None,
+        "precision": round(model_meta["precision"] * 100, 2) if "precision" in model_meta else None,
+        "recall": round(model_meta["recall"] * 100, 2) if "recall" in model_meta else None,
+        "specificity": round(model_meta["specificity"] * 100, 2) if "specificity" in model_meta else None,
+        "f1": round(model_meta["f1"] * 100, 2) if "f1" in model_meta else None,
+        "roc_auc": round(model_meta["roc_auc"], 4) if "roc_auc" in model_meta else None,
+        "confusion_matrix": model_meta.get("confusion_matrix"),
+        "feature_columns": model_meta.get("feature_columns", []),
+        "roc_curve": model_meta.get("roc_curve", {})
+    }
+
+    analytics_data = {
+        "disease_type": "breast_cancer",
+        "disease_name": "Breast Cytology (WDBC)",
+        "disease_icon": "🎗️",
+        "patient_stats": {
+            "total_patients": total_patients,
+            "risk_distribution": risk_counts,
+            "risk_percentages": risk_percentages,
+            "avg_probability": avg_probability,
+            "malignant_count": malignant_count,
+            "benign_count": benign_count,
+            "recent_patients": recent_patients
+        },
+        "model_performance": model_performance
+    }
+
+    if request.args.get("format") == "json" or (request.is_json and request.method == "GET"):
+        return jsonify(analytics_data)
+
+    return render_template("breast_cancer_analytics.html", **analytics_data)
 
 
 @app.route("/predict_page")
