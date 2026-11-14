@@ -147,8 +147,6 @@ REVERSE_FEATURE_MAP = {
     for key, value in FEATURE_MAP.items()
 }
 
-init_db()
-
 # ------------------------------------------------------------
 # Required Production Model Artifacts
 # ------------------------------------------------------------
@@ -2556,6 +2554,7 @@ def test_patient_context(patient_id):
 
 
 if __name__ == "__main__":
+    init_db()
     port = int(os.getenv("PORT", 5000))
     debug = os.getenv("FLASK_DEBUG", "false").lower() in ("true", "1")
     app.run(host="0.0.0.0", port=port, debug=debug)
