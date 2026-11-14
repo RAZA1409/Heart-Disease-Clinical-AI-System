@@ -4,19 +4,87 @@ Tests all 8 essential checks requested by user.
 """
 
 import os
-import unittest
+import shutil
 import sqlite3
+import tempfile
+import unittest
+from werkzeug.security import generate_password_hash
 from app import app
+from database import init_db, get_db_connection
 from risk_config import classify_risk, LOW_RISK_THRESHOLD, MODERATE_RISK_THRESHOLD
-from database import DATABASE_PATH, get_db_connection
+
 
 class Phase1VerificationTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        app.config['TESTING'] = True
-        app.config['WTF_CSRF_ENABLED'] = False
-        cls.client = app.test_client()
+        # 1. Capture original environment & app configuration
+        cls.orig_testing = app.config.get("TESTING")
+        cls.orig_csrf = app.config.get("WTF_CSRF_ENABLED")
+        cls.orig_db_path = os.environ.get("DATABASE_PATH")
+        cls.temp_dir = None
+
+        try:
+            app.config['TESTING'] = True
+            app.config['WTF_CSRF_ENABLED'] = False
+
+            # 2. Create isolated temporary test directory and SQLite database
+            cls.temp_dir = tempfile.mkdtemp(prefix="phase1_isolated_test_")
+            cls.test_db = os.path.join(cls.temp_dir, "test_phase1.db")
+            os.environ["DATABASE_PATH"] = cls.test_db
+
+            # 3. Initialize complete application schema in the isolated database
+            init_db()
+
+            # 4. Seed test-only admin user with known hashed credentials
+            conn = get_db_connection()
+            conn.execute("DELETE FROM users")  # Remove default seed from init_db()
+            test_admin_hash = generate_password_hash("Admin@1234")
+            conn.execute(
+                "INSERT INTO users (username, password) VALUES (?, ?)",
+                ("admin", test_admin_hash)
+            )
+
+            # 5. Seed synthetic patient fixtures to test data preservation (test_08) and history/dashboard (test_07)
+            synthetic_patients = [
+                ("PID_TEST_001", "Shivansh", 45, 1, 1, 130, 220, 0, 0, 150, 0, 1.2, 1, 0, 1, "Absent", 20.0, "LOW", "2026-11-14 10:00:00"),
+                ("PID_TEST_002", "Sanjana", 52, 0, 2, 125, 210, 0, 1, 140, 0, 0.8, 1, 0, 1, "Absent", 25.0, "LOW", "2026-11-14 10:05:00"),
+                ("PID_TEST_003", "Kohli", 38, 1, 0, 140, 240, 1, 0, 160, 1, 2.0, 2, 1, 2, "Present", 75.0, "HIGH", "2026-11-14 10:10:00"),
+            ]
+            for p in synthetic_patients:
+                conn.execute("""
+                    INSERT INTO patients (
+                        patient_id, patient_name, age, sex, cp, trestbps, chol, fbs,
+                        restecg, thalach, exang, oldpeak, slope, ca, thal,
+                        result, probability, risk_level, timestamp
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, p)
+            conn.commit()
+            conn.close()
+
+            cls.client = app.test_client()
+        except Exception:
+            cls.tearDownClass()
+            raise
+
+    @classmethod
+    def tearDownClass(cls):
+        # 1. Restore DATABASE_PATH environment variable
+        if hasattr(cls, "orig_db_path"):
+            if cls.orig_db_path is not None:
+                os.environ["DATABASE_PATH"] = cls.orig_db_path
+            else:
+                os.environ.pop("DATABASE_PATH", None)
+
+        # 2. Restore application configuration
+        if hasattr(cls, "orig_testing"):
+            app.config["TESTING"] = cls.orig_testing
+        if hasattr(cls, "orig_csrf"):
+            app.config["WTF_CSRF_ENABLED"] = cls.orig_csrf
+
+        # 3. Safely delete the temporary test directory
+        if getattr(cls, "temp_dir", None) and os.path.exists(cls.temp_dir):
+            shutil.rmtree(cls.temp_dir, ignore_errors=True)
 
     def test_01_app_starts_successfully(self):
         """1. Application starts successfully."""
@@ -127,14 +195,14 @@ class Phase1VerificationTests(unittest.TestCase):
         self.assertIn(b"Patient History Records", hist_res.data)
 
     def test_08_database_data_preserved(self):
-        """8. Database data is preserved."""
+        """8. Database data is preserved (verifying synthetic patient fixtures remain intact)."""
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT patient_name FROM patients")
         names = [r["patient_name"] for r in cursor.fetchall()]
         conn.close()
 
-        # Verify existing patients from before phase 1 are preserved
+        # Verify existing synthetic patient fixtures from setup are preserved
         self.assertIn("Shivansh", names)
         self.assertIn("Sanjana", names)
         self.assertIn("Kohli", names)

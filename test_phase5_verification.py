@@ -10,6 +10,7 @@ import shutil
 import sqlite3
 import joblib
 import pandas as pd
+from werkzeug.security import generate_password_hash
 from app import app, _load_required_artifact
 from database import get_db_connection, get_database_path, init_db
 
@@ -18,9 +19,100 @@ class Phase5ProductionReadinessVerification(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        app.config['TESTING'] = True
-        app.config['WTF_CSRF_ENABLED'] = False
-        cls.client = app.test_client()
+        cls.orig_testing = app.config.get("TESTING")
+        cls.orig_csrf = app.config.get("WTF_CSRF_ENABLED")
+        cls.orig_db_path = os.environ.get("DATABASE_PATH")
+        cls.temp_dir = None
+
+        try:
+            app.config['TESTING'] = True
+            app.config['WTF_CSRF_ENABLED'] = False
+
+            # Create isolated temporary directory & SQLite database
+            cls.temp_dir = tempfile.mkdtemp(prefix="phase5_isolated_suite_")
+            cls.test_db = os.path.join(cls.temp_dir, "test_phase5.db")
+            os.environ["DATABASE_PATH"] = cls.test_db
+
+            # Initialize complete application schema in the isolated database
+            init_db()
+
+            # Seed test-only admin user with known hashed credentials
+            conn = get_db_connection()
+            try:
+                conn.execute("DELETE FROM users")
+                test_admin_hash = generate_password_hash("Admin@1234")
+                conn.execute(
+                    "INSERT INTO users (username, password) VALUES (?, ?)",
+                    ("admin", test_admin_hash)
+                )
+
+                # Seed synthetic heart disease patient (satisfies test_07 heart_rows >= 1)
+                conn.execute("""
+                    INSERT INTO patients (
+                        patient_id, patient_name, age, sex, cp, trestbps, chol, fbs,
+                        restecg, thalach, exang, oldpeak, slope, ca, thal,
+                        result, probability, risk_level, timestamp
+                    ) VALUES (
+                        'PID_PHASE5_SYNTH_01', 'Synthetic Baseline Heart Patient', 54, 1, 1, 130, 225, 0,
+                        0, 150, 0, 1.0, 1, 0, 1, 'Absent', 20.0, 'LOW', '2026-11-14 10:00:00'
+                    )
+                """)
+
+                # Seed synthetic diabetes patient
+                conn.execute("""
+                    INSERT INTO diabetes_patients (
+                        patient_id, patient_name, age, pregnancies, glucose, blood_pressure,
+                        skin_thickness, insulin, bmi, dpf, result, probability, risk_level, timestamp
+                    ) VALUES (
+                        'DPID_PHASE5_SYNTH_01', 'Synthetic Baseline Diabetes Patient', 45, 1, 115.0, 78.0,
+                        22.0, 85.0, 25.5, 0.35, 'Absent', 18.0, 'LOW', '2026-11-14 10:00:00'
+                    )
+                """)
+
+                # Seed synthetic breast cancer patient
+                conn.execute("""
+                    INSERT INTO breast_cancer_patients (
+                        patient_id, patient_name, age, mean_radius, mean_texture, mean_perimeter, mean_area, mean_smoothness,
+                        mean_compactness, mean_concavity, mean_concave_points, mean_symmetry, mean_fractal_dimension,
+                        radius_error, texture_error, perimeter_error, area_error, smoothness_error, compactness_error,
+                        concavity_error, concave_points_error, symmetry_error, fractal_dimension_error,
+                        worst_radius, worst_texture, worst_perimeter, worst_area, worst_smoothness,
+                        worst_compactness, worst_concavity, worst_concave_points, worst_symmetry, worst_fractal_dimension,
+                        result, probability, risk_level, timestamp
+                    ) VALUES (
+                        'BCP_PHASE5_SYNTH_01', 'Synthetic Baseline Cancer Patient', 50, 13.5, 15.0, 88.0, 550.0, 0.09,
+                        0.08, 0.06, 0.04, 0.18, 0.055, 0.25, 0.7, 1.8, 20.0, 0.006, 0.012,
+                        0.018, 0.01, 0.018, 0.002, 15.0, 20.0, 98.0, 680.0, 0.12,
+                        0.15, 0.18, 0.09, 0.25, 0.065, 'Benign', 15.0, 'LOW', '2026-11-14 10:00:00'
+                    )
+                """)
+                conn.commit()
+            finally:
+                conn.close()
+
+            cls.client = app.test_client()
+        except Exception:
+            cls.tearDownClass()
+            raise
+
+    @classmethod
+    def tearDownClass(cls):
+        # 1. Restore DATABASE_PATH environment variable
+        if hasattr(cls, "orig_db_path"):
+            if cls.orig_db_path is not None:
+                os.environ["DATABASE_PATH"] = cls.orig_db_path
+            else:
+                os.environ.pop("DATABASE_PATH", None)
+
+        # 2. Restore application configuration
+        if hasattr(cls, "orig_testing"):
+            app.config["TESTING"] = cls.orig_testing
+        if hasattr(cls, "orig_csrf"):
+            app.config["WTF_CSRF_ENABLED"] = cls.orig_csrf
+
+        # 3. Safely delete the temporary test directory
+        if getattr(cls, "temp_dir", None) and os.path.exists(cls.temp_dir):
+            shutil.rmtree(cls.temp_dir, ignore_errors=True)
 
     def get_authenticated_session(self):
         client = app.test_client()

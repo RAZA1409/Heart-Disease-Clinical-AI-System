@@ -11,90 +11,131 @@ Verifies:
 8. Preservation of legacy dashboard variables and existing prediction routes.
 """
 
+import os
+import shutil
+import tempfile
 import unittest
 from unittest.mock import patch, MagicMock
 import datetime
 import secrets
 import sqlite3
+from werkzeug.security import generate_password_hash
 
 from app import app
-from database import get_db_connection
+from database import get_db_connection, init_db
 
 
 class Phase8ABackendAggregationTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        app.config["TESTING"] = True
-        app.config["WTF_CSRF_ENABLED"] = False
-        cls.client = app.test_client()
+        cls.orig_testing = app.config.get("TESTING")
+        cls.orig_csrf = app.config.get("WTF_CSRF_ENABLED")
+        cls.orig_db_path = os.environ.get("DATABASE_PATH")
+        cls.temp_dir = None
 
-        # Generate unique test patient IDs
-        cls.ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-        cls.heart_pid = "PID" + cls.ts + secrets.token_hex(4).upper()
-        cls.diab_pid = "DPID" + cls.ts + secrets.token_hex(4).upper()
-        cls.cancer_pid = "BCP" + cls.ts + secrets.token_hex(4).upper()
+        try:
+            app.config["TESTING"] = True
+            app.config["WTF_CSRF_ENABLED"] = False
 
-        conn = get_db_connection()
+            # Create isolated temporary directory & SQLite database
+            cls.temp_dir = tempfile.mkdtemp(prefix="phase8a_isolated_test_")
+            cls.test_db = os.path.join(cls.temp_dir, "test_phase8a.db")
+            os.environ["DATABASE_PATH"] = cls.test_db
 
-        # Seed 1 Heart Patient
-        conn.execute("""
-            INSERT INTO patients (
-                patient_id, patient_name, age, sex, cp, trestbps, chol,
-                fbs, restecg, thalach, exang, oldpeak, slope, ca, thal,
-                result, probability, risk_level, timestamp
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            cls.heart_pid, "Synthetic Heart Patient", 60, 1, 0, 140, 250,
-            0, 0, 130, 1, 2.0, 1, 1, 2, "Present", 82.5, "HIGH", "2026-05-01 10:00:00"
-        ))
+            # Initialize complete application schema in the isolated database
+            init_db()
 
-        # Seed 1 Diabetes Patient
-        conn.execute("""
-            INSERT INTO diabetes_patients (
-                patient_id, patient_name, age, pregnancies, glucose,
-                blood_pressure, skin_thickness, insulin, bmi, dpf,
-                result, probability, risk_level, timestamp
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            cls.diab_pid, "Synthetic Diabetes Patient", 45, 2, 145.0,
-            80.0, 25.0, 100.0, 29.5, 0.55, "Present", 65.0, "MODERATE", "2026-06-01 12:00:00"
-        ))
+            # Generate unique test patient IDs
+            cls.ts = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+            cls.heart_pid = "PID" + cls.ts + secrets.token_hex(4).upper()
+            cls.diab_pid = "DPID" + cls.ts + secrets.token_hex(4).upper()
+            cls.cancer_pid = "BCP" + cls.ts + secrets.token_hex(4).upper()
 
-        # Seed 1 Breast Cancer Patient
-        conn.execute("""
-            INSERT INTO breast_cancer_patients (
-                patient_id, patient_name, age, mean_radius, mean_texture,
-                mean_perimeter, mean_area, mean_smoothness, mean_compactness,
-                mean_concavity, mean_concave_points, mean_symmetry,
-                mean_fractal_dimension, radius_error, texture_error,
-                perimeter_error, area_error, smoothness_error, compactness_error,
-                concavity_error, concave_points_error, symmetry_error,
-                fractal_dimension_error, worst_radius, worst_texture,
-                worst_perimeter, worst_area, worst_smoothness, worst_compactness,
-                worst_concavity, worst_concave_points, worst_symmetry,
-                worst_fractal_dimension, result, probability, risk_level, timestamp
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            cls.cancer_pid, "Synthetic Cancer Patient", 50, 12.0, 18.0,
-            80.0, 480.0, 0.08, 0.09, 0.05, 0.03, 0.16,
-            0.05, 0.3, 0.9, 2.1, 25.0, 0.005, 0.015,
-            0.02, 0.01, 0.015, 0.003, 14.0, 22.0,
-            95.0, 620.0, 0.11, 0.20, 0.15, 0.08, 0.25,
-            0.07, "Benign", 22.0, "LOW", "2026-07-01 14:00:00"
-        ))
+            conn = get_db_connection()
+            try:
+                # Seed test-only admin user
+                conn.execute("DELETE FROM users")
+                test_admin_hash = generate_password_hash("Admin@1234")
+                conn.execute(
+                    "INSERT INTO users (username, password) VALUES (?, ?)",
+                    ("admin", test_admin_hash)
+                )
 
-        conn.commit()
-        conn.close()
+                # Seed 1 Heart Patient
+                conn.execute("""
+                    INSERT INTO patients (
+                        patient_id, patient_name, age, sex, cp, trestbps, chol,
+                        fbs, restecg, thalach, exang, oldpeak, slope, ca, thal,
+                        result, probability, risk_level, timestamp
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    cls.heart_pid, "Synthetic Heart Patient", 60, 1, 0, 140, 250,
+                    0, 0, 130, 1, 2.0, 1, 1, 2, "Present", 82.5, "HIGH", "2026-05-01 10:00:00"
+                ))
+
+                # Seed 1 Diabetes Patient
+                conn.execute("""
+                    INSERT INTO diabetes_patients (
+                        patient_id, patient_name, age, pregnancies, glucose,
+                        blood_pressure, skin_thickness, insulin, bmi, dpf,
+                        result, probability, risk_level, timestamp
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    cls.diab_pid, "Synthetic Diabetes Patient", 45, 2, 145.0,
+                    80.0, 25.0, 100.0, 29.5, 0.55, "Present", 65.0, "MODERATE", "2026-06-01 12:00:00"
+                ))
+
+                # Seed 1 Breast Cancer Patient
+                conn.execute("""
+                    INSERT INTO breast_cancer_patients (
+                        patient_id, patient_name, age, mean_radius, mean_texture,
+                        mean_perimeter, mean_area, mean_smoothness, mean_compactness,
+                        mean_concavity, mean_concave_points, mean_symmetry,
+                        mean_fractal_dimension, radius_error, texture_error,
+                        perimeter_error, area_error, smoothness_error, compactness_error,
+                        concavity_error, concave_points_error, symmetry_error,
+                        fractal_dimension_error, worst_radius, worst_texture,
+                        worst_perimeter, worst_area, worst_smoothness, worst_compactness,
+                        worst_concavity, worst_concave_points, worst_symmetry,
+                        worst_fractal_dimension, result, probability, risk_level, timestamp
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    cls.cancer_pid, "Synthetic Cancer Patient", 50, 12.0, 18.0,
+                    80.0, 480.0, 0.08, 0.09, 0.05, 0.03, 0.16,
+                    0.05, 0.3, 0.9, 2.1, 25.0, 0.005, 0.015,
+                    0.02, 0.01, 0.015, 0.003, 14.0, 22.0,
+                    95.0, 620.0, 0.11, 0.20, 0.15, 0.08, 0.25,
+                    0.07, "Benign", 22.0, "LOW", "2026-07-01 14:00:00"
+                ))
+
+                conn.commit()
+            finally:
+                conn.close()
+
+            cls.client = app.test_client()
+        except Exception:
+            cls.tearDownClass()
+            raise
 
     @classmethod
     def tearDownClass(cls):
-        conn = get_db_connection()
-        conn.execute("DELETE FROM patients WHERE patient_id = ?", (cls.heart_pid,))
-        conn.execute("DELETE FROM diabetes_patients WHERE patient_id = ?", (cls.diab_pid,))
-        conn.execute("DELETE FROM breast_cancer_patients WHERE patient_id = ?", (cls.cancer_pid,))
-        conn.commit()
-        conn.close()
+        # 1. Restore DATABASE_PATH environment variable
+        if hasattr(cls, "orig_db_path"):
+            if cls.orig_db_path is not None:
+                os.environ["DATABASE_PATH"] = cls.orig_db_path
+            else:
+                os.environ.pop("DATABASE_PATH", None)
+
+        # 2. Restore application configuration
+        if hasattr(cls, "orig_testing"):
+            app.config["TESTING"] = cls.orig_testing
+        if hasattr(cls, "orig_csrf"):
+            app.config["WTF_CSRF_ENABLED"] = cls.orig_csrf
+
+        # 3. Safely delete the temporary test directory
+        if getattr(cls, "temp_dir", None) and os.path.exists(cls.temp_dir):
+            shutil.rmtree(cls.temp_dir, ignore_errors=True)
 
     def get_auth_client(self):
         client = app.test_client()

@@ -12,23 +12,88 @@ Verifies:
 import unittest
 import re
 import os
+import shutil
+import tempfile
 import secrets
 import datetime
 from unittest.mock import patch, MagicMock
 import joblib
 import pandas as pd
+from werkzeug.security import generate_password_hash
 
 from app import app, FEATURE_MAP, REVERSE_FEATURE_MAP
-from database import get_db_connection
+from database import get_db_connection, init_db
 
 
 class Phase6BConsistencyCorrectionsTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        app.config['TESTING'] = True
-        app.config['WTF_CSRF_ENABLED'] = False
-        cls.client = app.test_client()
+        cls.orig_testing = app.config.get("TESTING")
+        cls.orig_csrf = app.config.get("WTF_CSRF_ENABLED")
+        cls.orig_db_path = os.environ.get("DATABASE_PATH")
+        cls.temp_dir = None
+
+        try:
+            app.config['TESTING'] = True
+            app.config['WTF_CSRF_ENABLED'] = False
+
+            # Create isolated temporary directory & SQLite database
+            cls.temp_dir = tempfile.mkdtemp(prefix="phase6b_isolated_test_")
+            cls.test_db = os.path.join(cls.temp_dir, "test_phase6b.db")
+            os.environ["DATABASE_PATH"] = cls.test_db
+
+            # Initialize complete application schema in the isolated database
+            init_db()
+
+            # Seed test-only admin user and synthetic fixtures
+            conn = get_db_connection()
+            try:
+                conn.execute("DELETE FROM users")
+                test_admin_hash = generate_password_hash("Admin@1234")
+                conn.execute(
+                    "INSERT INTO users (username, password) VALUES (?, ?)",
+                    ("admin", test_admin_hash)
+                )
+
+                # Seed baseline synthetic heart patient fixture
+                conn.execute("""
+                    INSERT INTO patients (
+                        patient_id, patient_name, age, sex, cp, trestbps, chol, fbs,
+                        restecg, thalach, exang, oldpeak, slope, ca, thal,
+                        result, probability, risk_level, timestamp
+                    ) VALUES (
+                        'PID_PHASE6B_SYNTH_01', 'Phase6B Baseline Subject', 55, 1, 1, 130, 220, 0,
+                        0, 150, 0, 1.0, 1, 0, 1, 'Absent', 22.5, 'LOW', '2026-11-14 10:00:00'
+                    )
+                """)
+                conn.commit()
+            finally:
+                conn.close()
+
+            cls.client = app.test_client()
+        except Exception:
+            cls.tearDownClass()
+            raise
+
+    @classmethod
+    def tearDownClass(cls):
+        # 1. Restore DATABASE_PATH environment variable
+        if hasattr(cls, "orig_db_path"):
+            if cls.orig_db_path is not None:
+                os.environ["DATABASE_PATH"] = cls.orig_db_path
+            else:
+                os.environ.pop("DATABASE_PATH", None)
+
+        # 2. Restore application configuration
+        if hasattr(cls, "orig_testing"):
+            app.config["TESTING"] = cls.orig_testing
+        if hasattr(cls, "orig_csrf"):
+            app.config["WTF_CSRF_ENABLED"] = cls.orig_csrf
+
+        # 3. Safely delete the temporary test directory
+        if getattr(cls, "temp_dir", None) and os.path.exists(cls.temp_dir):
+            shutil.rmtree(cls.temp_dir, ignore_errors=True)
 
     def get_authenticated_session(self):
         client = app.test_client()

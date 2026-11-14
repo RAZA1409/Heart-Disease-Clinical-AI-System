@@ -10,19 +10,74 @@ Verifies all Phase 8D requirements:
 7. Responsive mobile stylesheet rules preventing horizontal page overflow.
 """
 
+import os
+import shutil
+import tempfile
 import re
 import unittest
+from werkzeug.security import generate_password_hash
+
 from app import app
-from database import get_db_connection
+from database import get_db_connection, init_db
 
 
 class Phase8DFormUITests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        app.config["TESTING"] = True
-        app.config["WTF_CSRF_ENABLED"] = False
-        cls.client = app.test_client()
+        cls.orig_testing = app.config.get("TESTING")
+        cls.orig_csrf = app.config.get("WTF_CSRF_ENABLED")
+        cls.orig_db_path = os.environ.get("DATABASE_PATH")
+        cls.temp_dir = None
+
+        try:
+            app.config["TESTING"] = True
+            app.config["WTF_CSRF_ENABLED"] = False
+
+            # Create isolated temporary directory & SQLite database
+            cls.temp_dir = tempfile.mkdtemp(prefix="phase8d_isolated_test_")
+            cls.test_db = os.path.join(cls.temp_dir, "test_phase8d.db")
+            os.environ["DATABASE_PATH"] = cls.test_db
+
+            # Initialize complete application schema in the isolated database
+            init_db()
+
+            # Seed test-only admin user
+            conn = get_db_connection()
+            try:
+                conn.execute("DELETE FROM users")
+                test_admin_hash = generate_password_hash("Admin@1234")
+                conn.execute(
+                    "INSERT INTO users (username, password) VALUES (?, ?)",
+                    ("admin", test_admin_hash)
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+            cls.client = app.test_client()
+        except Exception:
+            cls.tearDownClass()
+            raise
+
+    @classmethod
+    def tearDownClass(cls):
+        # 1. Restore DATABASE_PATH environment variable
+        if hasattr(cls, "orig_db_path"):
+            if cls.orig_db_path is not None:
+                os.environ["DATABASE_PATH"] = cls.orig_db_path
+            else:
+                os.environ.pop("DATABASE_PATH", None)
+
+        # 2. Restore application configuration
+        if hasattr(cls, "orig_testing"):
+            app.config["TESTING"] = cls.orig_testing
+        if hasattr(cls, "orig_csrf"):
+            app.config["WTF_CSRF_ENABLED"] = cls.orig_csrf
+
+        # 3. Safely delete the temporary test directory
+        if getattr(cls, "temp_dir", None) and os.path.exists(cls.temp_dir):
+            shutil.rmtree(cls.temp_dir, ignore_errors=True)
 
     def get_auth_client(self):
         client = app.test_client()
