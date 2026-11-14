@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Diabetes Clinical Report | {{ patient.patient_name }}</title>
+    <title>Diabetes Clinical Report | {{ patient.patient_name | format_patient_name }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -274,7 +274,7 @@
 
     <div class="hero">
         <div class="hero-left">
-            <div class="patient-name">{{ patient.patient_name }}</div>
+            <div class="patient-name">{{ patient.patient_name | format_patient_name }}</div>
             <div class="patient-meta">
                 <span><strong>ID:</strong> {{ patient.patient_id }}</span>
                 <span><strong>Age:</strong> {{ patient.age }} yrs</span>

@@ -12,7 +12,7 @@ import sqlite3
 import secrets
 from google import genai
 from google.genai import types
-from flask import Flask, render_template, request, session, redirect, url_for, jsonify
+from flask import Flask, render_template, request, session, redirect, url_for, jsonify, flash
 from werkzeug.security import check_password_hash, generate_password_hash
 from database import get_db_connection, init_db
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
@@ -212,6 +212,24 @@ def check_range(value, min_val=None, max_val=None):
         return "HIGH"
     return "NORMAL"
 
+
+def format_patient_name(name):
+    """
+    Format patient name for display.
+    Provides 'Name not available' fallback if name is NULL, empty, or placeholder.
+    """
+    if not name:
+        return "Name not available"
+    cleaned = str(name).strip()
+    if not cleaned or cleaned.lower() in ("unknown", "none", "null"):
+        return "Name not available"
+    return cleaned
+
+
+@app.template_filter("format_patient_name")
+def _format_patient_name_filter(name):
+    return format_patient_name(name)
+
 # ------------------------------------------------------------
 # Home
 # ------------------------------------------------------------
@@ -341,6 +359,7 @@ def forgot_password():
         username = request.form["username"]
         recovery_code = request.form["recovery_code"]
         new_password = request.form["new_password"]
+        confirm_password = request.form.get("confirm_password")
 
         stored_code = os.getenv("ADMIN_RECOVERY_CODE")
 
@@ -353,6 +372,10 @@ def forgot_password():
         if len(new_password) < 8:
             return render_template("forgot_password.html",
                                    error="Password must be at least 8 characters long")
+
+        if confirm_password and confirm_password != new_password:
+            return render_template("forgot_password.html",
+                                   error="Passwords do not match")
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -373,8 +396,8 @@ def forgot_password():
         conn.commit()
         conn.close()
 
-        return render_template("forgot_password.html",
-                               success="Password reset successful. You can now login.")
+        flash("Password reset successfully. Please log in with your new password.", "success")
+        return redirect(url_for("login"))
 
     return render_template("forgot_password.html")
 
@@ -962,7 +985,7 @@ def predict():
         return redirect(url_for("login"))
 
     try:
-        patient_name = request.form.get("patient_name", "").strip().title() or "Unknown"
+        patient_name = request.form.get("patient_name", "").strip().title() or "Name not available"
 
         # UI → Numeric
         sex = FEATURE_MAP["sex"][request.form["sex"]]
@@ -1051,7 +1074,8 @@ def predict():
                            patient_id=patient_id,
                            probability=round(probability * 100, 2),
                            prediction="Present" if prediction == 1 else "Absent",
-                           risk_level=risk_level)
+                           risk_level=risk_level,
+                           timestamp=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
 # ------------------------------------------------------------
 # History
@@ -1094,6 +1118,7 @@ def patient_detail(patient_id):
         return redirect(url_for("history"))
 
     patient = dict(patient_row)
+    patient["patient_name"] = format_patient_name(patient.get("patient_name"))
 
     # ----------------------------
     # Utility functions
@@ -1292,6 +1317,7 @@ def download_report(patient_id):
         return redirect(url_for("history"))
 
     patient = dict(patient_row)
+    patient["patient_name"] = format_patient_name(patient.get("patient_name"))
 
     buffer = BytesIO()
     pdf = SimpleDocTemplate(buffer)
@@ -1480,7 +1506,7 @@ def diabetes_predict():
         return redirect(url_for("login"))
 
     try:
-        patient_name = request.form.get("patient_name", "").strip().title() or "Unknown"
+        patient_name = request.form.get("patient_name", "").strip().title() or "Name not available"
         age = int(float(request.form["age"]))
         pregnancies = int(float(request.form.get("pregnancies", 0)))
         glucose = float(request.form["glucose"])
@@ -1580,6 +1606,7 @@ def diabetes_patient_detail(patient_id):
         return redirect(url_for("diabetes_history"))
 
     patient = dict(patient_row)
+    patient["patient_name"] = format_patient_name(patient.get("patient_name"))
 
     glucose = safe_float(patient.get("glucose"))
     bmi = safe_float(patient.get("bmi"))
@@ -1698,6 +1725,7 @@ def diabetes_download_report(patient_id):
         return redirect(url_for("diabetes_history"))
 
     patient = dict(patient_row)
+    patient["patient_name"] = format_patient_name(patient.get("patient_name"))
 
     buffer = BytesIO()
     pdf = SimpleDocTemplate(buffer)

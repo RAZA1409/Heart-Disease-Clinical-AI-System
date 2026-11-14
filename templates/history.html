@@ -191,7 +191,7 @@ box-shadow: 0 0 8px #38bdf8;
 <tr onclick="window.location='/patient/{{ p.patient_id }}'">
 
 <td>{{ p.patient_id }}</td>
-<td>{{ p.patient_name }}</td>
+<td>{{ p.patient_name | format_patient_name }}</td>
 <td>{{ p.age }}</td>
 
 <td>

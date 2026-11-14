@@ -213,7 +213,7 @@
             {% for p in patients %}
             <tr class="patient-row" onclick="window.location='{{ url_for('diabetes_patient_detail', patient_id=p.patient_id) }}'">
                 <td style="font-family: monospace; color: #38bdf8;">{{ p.patient_id }}</td>
-                <td><strong>{{ p.patient_name }}</strong></td>
+                <td><strong>{{ p.patient_name | format_patient_name }}</strong></td>
                 <td>{{ p.age }}</td>
                 <td>{{ p.glucose }} mg/dL</td>
                 <td>{{ p.bmi }}</td>

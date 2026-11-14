@@ -1,492 +1,1219 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Patient Clinical Report</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Clinical Analytics | Cardiovascular AI Platform</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<style>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-body{
-    font-family:'Poppins',sans-serif;
-    margin:0;
-    background:linear-gradient(135deg,#1e3c4f,#2c5364);
-}
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0b1329;
+            color: #f8fafc;
+            min-height: 100vh;
+            line-height: 1.5;
+            padding: 24px 16px;
+            overflow-x: hidden;
+        }
 
-/* MAIN CONTAINER */
-.container{
-    width:92%;
-    max-width:1350px;
-    margin:40px auto;
-    background:rgba(255,255,255,0.07);
-    padding:40px;
-    border-radius:22px;
-    box-shadow:0 25px 50px rgba(0,0,0,0.15);
-}
+        .analytics-wrapper {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
 
-/* HEADER */
-.header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:30px;
-    flex-wrap:wrap;
-    gap:20px;
-}
+        /* =========================================================
+           TOP NAVIGATION & HEADER
+           ========================================================= */
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 16px;
+            padding: 18px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            flex-wrap: wrap;
+            gap: 16px;
+        }
 
-.header h2{
-    margin:0;
-    font-weight:700;
-    color:#1e293b;
-}
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
 
-/* ACTION BUTTONS */
-.actions{
-    display:flex;
-    gap:12px;
-    align-items:center;
-    flex-wrap:wrap;
-}
+        .brand-icon {
+            font-size: 26px;
+            background: rgba(37, 99, 235, 0.15);
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            color: #2563eb;
+        }
 
-.btn{
-    padding:10px 18px;
-    border-radius:10px;
-    font-size:14px;
-    font-weight:500;
-    text-decoration:none;
-    transition:0.3s;
-    cursor:pointer;
-    border:none;
-}
+        .brand-titles h1, .brand-titles h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #f8fafc;
+            letter-spacing: -0.02em;
+            margin: 0;
+        }
 
-.btn-download{
-    background:linear-gradient(135deg,#2563eb,#1e40af);
-    color:white;
-}
+        .brand-titles p {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
 
-.btn-download:hover{
-    transform:translateY(-2px);
-    box-shadow:0 8px 20px rgba(37,99,235,0.3);
-}
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
 
-.btn-print{
-    background:linear-gradient(135deg,#10b981,#047857);
-    color:white;
-}
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+        }
 
-.btn-print:hover{
-    transform:translateY(-2px);
-    box-shadow:0 8px 20px rgba(16,185,129,0.3);
-}
+        .btn-download {
+            background: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+        }
 
-/* RISK BADGE */
-.badge{
-    padding:10px 22px;
-    border-radius:30px;
-    font-weight:600;
-    color:white;
-    font-size:14px;
-}
+        .btn-download:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+        }
 
-.low{ background:linear-gradient(135deg,#22c55e,#15803d); }
-.moderate{ background:linear-gradient(135deg,#f59e0b,#d97706); }
-.high{ background:linear-gradient(135deg,#ef4444,#7f1d1d); }
+        .btn-print {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
 
-/* HERO */
-.hero{
-    background:linear-gradient(135deg,#1e293b,#334155);
-    color:white;
-    padding:35px;
-    border-radius:20px;
-    margin-bottom:40px;
-}
+        .btn-print:hover {
+            background: rgba(16, 185, 129, 0.25);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
 
-.patient-name{
-    font-size:36px;
-    font-weight:700;
-    margin-bottom:10px;
-}
+        .btn-nav-muted {
+            background: rgba(148, 163, 184, 0.12);
+            color: #f8fafc;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
 
-.probability{
-    font-size:52px;
-    font-weight:700;
-    color:#38bdf8;
-}
+        .btn-nav-muted:hover {
+            background: rgba(148, 163, 184, 0.2);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
 
-/* LAYOUT */
-.main-layout{
-    display:flex;
-    gap:60px;
-    flex-wrap:wrap;
-}
+        /* RISK LEVEL BADGE */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
 
-.left{
-    flex:1;
-    min-width:420px;
-}
+        .badge.low {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
 
-/* RIGHT SIDE CLEAN */
-.right{
-    width:420px;
-    display:flex;
-    flex-direction:column;
-    gap:35px;
-}
+        .badge.moderate {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.35);
+        }
 
-/* DONUT CARD */
-.donut-box{
-    background:white;
-    padding:40px;
-    border-radius:22px;
-    box-shadow:0 15px 35px rgba(0,0,0,0.08);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:340px;
-}
+        .badge.high {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+        }
 
-/* PANEL BOX */
-.panel-box{
-    background:white;
-    padding:28px;
-    border-radius:20px;
-    box-shadow:0 15px 30px rgba(0,0,0,0.06);
-}
+        /* =========================================================
+           HERO & RISK OVERVIEW SECTION
+           ========================================================= */
+        .hero-card {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 18px;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 28px;
+            align-items: center;
+        }
 
-/* RECOMMENDATION */
-.recommendation{
-    padding:25px;
-    border-radius:18px;
-    margin-bottom:35px;
-    background:#f8fafc;
-    border-left:6px solid #2563eb;
-}
+        .hero-left {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
 
-/* FEATURE CARDS */
-.feature-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    gap:22px;
-    margin-bottom:40px;
-}
+        .patient-meta-tags {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
 
-.card{
-    padding:24px;
-    border-radius:18px;
-    color:white;
-    box-shadow:0 10px 20px rgba(0,0,0,0.08);
-    transition:0.3s;
-}
+        .id-badge {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12px;
+            padding: 3px 8px;
+            background: rgba(148, 163, 184, 0.12);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 6px;
+            color: #94a3b8;
+        }
 
-.card:hover{
-    transform:translateY(-6px);
-}
+        .time-badge {
+            font-size: 12px;
+            color: #64748b;
+        }
 
-.card h4{
-    margin:0;
-    font-size:14px;
-    opacity:0.9;
-}
+        .patient-name {
+            font-size: 32px;
+            font-weight: 700;
+            color: #f8fafc;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
 
-.card p{
-    font-size:26px;
-    margin:12px 0 5px;
-    font-weight:600;
-}
+        .hero-stat-row {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
 
-.normal{ background:linear-gradient(135deg,#0ea5e9,#0369a1); }
-.warning{ background:linear-gradient(135deg,#f59e0b,#b45309); }
-.danger{ background:linear-gradient(135deg,#ef4444,#7f1d1d); }
+        .probability-value {
+            font-size: 48px;
+            font-weight: 800;
+            color: #38bdf8;
+            letter-spacing: -0.03em;
+            line-height: 1;
+        }
 
-/* BAR CHART */
-.chart-box{
-    background:#f8fafc;
-    padding:30px;
-    border-radius:20px;
-    box-shadow:0 10px 20px rgba(0,0,0,0.05);
-}
+        .probability-label {
+            font-size: 14px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
 
-/* BACK BUTTON */
-.back-btn{
-    display:inline-block;
-    margin-top:45px;
-    padding:14px 28px;
-    background:linear-gradient(135deg,#203a43,#2c5364);
-    color:white;
-    text-decoration:none;
-    border-radius:12px;
-    font-weight:500;
-    transition:0.3s;
-}
+        .pred-status {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 8px;
+            display: inline-block;
+        }
 
-.back-btn:hover{
-    transform:translateY(-3px);
-    box-shadow:0 10px 25px rgba(0,0,0,0.2);
-}
+        .pred-present {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
 
-/* 🔥 DONUT CENTER FIX */
-.donut-container {
-    position: relative;
-    width: 260px;
-    height: 260px;
-}
+        .pred-absent {
+            background: rgba(16, 185, 129, 0.15);
+            color: #86efac;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
 
-.chart-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-}
+        .disclaimer-subtext {
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.5;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+            padding-top: 12px;
+            margin-top: 6px;
+        }
 
-.chart-value {
-    font-size: 30px;
-    font-weight: 700;
-    color: #1e293b;
-}
+        .hero-right {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-.chart-label {
-    font-size: 14px;
-    font-weight: 600;
-    color: #64748b;
-}
+        .donut-container {
+            position: relative;
+            width: 220px;
+            height: 220px;
+        }
 
-.recommendation ul {
-    margin: 0;
-}
+        .chart-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+        }
 
-.recommendation li {
-    font-size: 14px;
-    color: #1e293b;
-}
+        .chart-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: #f8fafc;
+            line-height: 1.1;
+        }
 
-.alert-box {
-    border-left: 6px solid #ef4444;
-    background: #fff5f5;
-}
+        .chart-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 4px;
+        }
 
-.alert-box li {
-    color: #dc2626;
-    font-weight: 500;
-}
+        /* =========================================================
+           CLINICAL PARAMETER STATUS CARDS
+           ========================================================= */
+        .section-heading {
+            font-size: 16px;
+            font-weight: 600;
+            color: #f8fafc;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-.card.intelligence {
-    margin-top: 20px;
-    padding: 20px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-}
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+            margin-bottom: 24px;
+        }
 
-.card.intelligence h3 {
-    margin-bottom: 15px;
-}
+        .card {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
 
-.card.intelligence p {
-    margin: 8px 0;
-    font-size: 15px;
-}
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(37, 99, 235, 0.35);
+        }
 
-.ai-quick-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: #64748b;
-    margin-bottom: 10px;
-}
+        .card h4 {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 500;
+            color: #94a3b8;
+        }
 
-.ai-quick-questions {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-    margin-top: 10px;
-}
+        .card p {
+            font-size: 28px;
+            margin: 10px 0 6px;
+            font-weight: 700;
+            color: #f8fafc;
+            letter-spacing: -0.01em;
+        }
 
-.ai-quick-questions button {
-    border: 1px solid #dbe3ef;
-    background: #f8fafc;
-    color: #2563eb;
-    padding: 9px 11px;
-    border-radius: 10px;
-    text-align: left;
-    font-family: 'Poppins', sans-serif;
-    font-size: 11px;
-    cursor: pointer;
-    transition: 0.2s;
-}
+        .card-status-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 6px;
+            display: inline-block;
+            align-self: flex-start;
+        }
 
-.ai-quick-questions button:hover {
-    background: #eff6ff;
-    border-color: #2563eb;
-}
+        /* Parameter Status Accents */
+        .card.normal {
+            border-left: 4px solid #0284c7;
+        }
+        .card.normal .card-status-badge {
+            background: rgba(2, 132, 199, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(2, 132, 199, 0.3);
+        }
 
-/* PRINT OPTIMIZATION */
-@media print {
-    body{ background:white; }
-    .btn, .back-btn{ display:none; }
-    .container{
-        box-shadow:none;
-        margin:0;
-        width:100%;
-    }
-}
-</style>
+        .card.warning {
+            border-left: 4px solid #f59e0b;
+        }
+        .card.warning .card-status-badge {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .card.danger {
+            border-left: 4px solid #ef4444;
+        }
+        .card.danger .card-status-badge {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* =========================================================
+           TWO-COLUMN MAIN LAYOUT
+           ========================================================= */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .content-col {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* CLINICAL INSIGHT PANELS */
+        .panel {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 16px;
+            padding: 22px 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .panel-header h4 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+        }
+
+        /* Recommendations */
+        .panel-recommendation {
+            border-left: 4px solid #2563eb;
+        }
+
+        .rec-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .rec-item {
+            font-size: 13.5px;
+            color: #cbd5e1;
+            line-height: 1.5;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .rec-item::before {
+            content: "•";
+            color: #38bdf8;
+            font-weight: bold;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        /* Explanation */
+        .panel-explanation {
+            border-left: 4px solid #0284c7;
+        }
+
+        .explanation-text {
+            font-size: 13.5px;
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin: 0;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        /* Alerts */
+        .panel-alerts {
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .alert-item {
+            font-size: 13.5px;
+            line-height: 1.5;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .alert-item.alert-critical {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .alert-item.alert-warning {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fde68a;
+        }
+
+        .alert-clean {
+            font-size: 13.5px;
+            color: #86efac;
+            background: rgba(16, 185, 129, 0.12);
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            margin: 0;
+        }
+
+        /* =========================================================
+           RIGHT COLUMN: RISK INTELLIGENCE & PATIENT METRICS
+           ========================================================= */
+        .panel-intelligence {
+            border-left: 4px solid #8b5cf6;
+        }
+
+        .intelligence-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .intel-cell {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .intel-label {
+            font-size: 11px;
+            color: #94a3b8;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
+        }
+
+        .intel-val {
+            font-size: 15px;
+            font-weight: 600;
+            color: #f8fafc;
+            word-break: break-word;
+        }
+
+        /* =========================================================
+           CHART CONTAINERS
+           ========================================================= */
+        .chart-box {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            margin-bottom: 24px;
+        }
+
+        .chart-box h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #f8fafc;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .param-chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 280px;
+            max-height: 300px;
+        }
+
+        .param-chart-wrapper canvas {
+            max-width: 100% !important;
+            max-height: 100% !important;
+        }
+
+        /* =========================================================
+           COMPREHENSIVE 13-PARAMETER CLINICAL TABLE
+           ========================================================= */
+        .table-panel {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 16px;
+            padding: 22px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .clinical-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+
+        .clinical-table th {
+            text-align: left;
+            padding: 10px 14px;
+            background: rgba(15, 23, 42, 0.6);
+            color: #94a3b8;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .clinical-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+        }
+
+        .clinical-table tr:hover td {
+            background: rgba(30, 41, 59, 0.7);
+        }
+
+        .clinical-table .param-name {
+            font-weight: 500;
+            color: #f8fafc;
+        }
+
+        .clinical-table .param-val {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            color: #38bdf8;
+            font-weight: 600;
+        }
+
+        /* =========================================================
+           BACK BUTTON & FOOTER
+           ========================================================= */
+        .bottom-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(148, 163, 184, 0.12);
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 11px 20px;
+            background: rgba(148, 163, 184, 0.12);
+            color: #f8fafc;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(148, 163, 184, 0.22);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .footer-note {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        /* =========================================================
+           PRINT OPTIMIZATION (@media print)
+           ========================================================= */
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #0f172a !important;
+                padding: 0 !important;
+            }
+
+            .analytics-wrapper {
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+
+            /* Hide interactive controls in print */
+            .header-nav,
+            .btn,
+            .btn-download,
+            .btn-print,
+            .btn-nav-muted,
+            .back-btn,
+            .bottom-actions,
+            #ai-chat-bubble,
+            .ai-chat-bubble,
+            .ai-chat-window,
+            .ai-quick-questions {
+                display: none !important;
+            }
+
+            /* Print Header Replacement */
+            .print-only-header {
+                display: block !important;
+                margin-bottom: 20px;
+                border-bottom: 2px solid #0f172a;
+                padding-bottom: 10px;
+            }
+
+            .print-only-header h1 {
+                font-size: 20px;
+                color: #0f172a;
+                margin: 0;
+            }
+
+            .print-only-header p {
+                font-size: 11px;
+                color: #64748b;
+                margin: 4px 0 0;
+            }
+
+            .hero-card,
+            .card,
+            .panel,
+            .chart-box,
+            .table-panel {
+                background: #ffffff !important;
+                border: 1px solid #cbd5e1 !important;
+                box-shadow: none !important;
+                color: #0f172a !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                margin-bottom: 16px !important;
+            }
+
+            .patient-name,
+            .card p,
+            .probability-value,
+            .chart-value,
+            .panel-header h4,
+            .section-heading,
+            .intel-val,
+            .clinical-table .param-name {
+                color: #0f172a !important;
+            }
+
+            .patient-meta-tags .id-badge,
+            .card h4,
+            .probability-label,
+            .chart-label,
+            .intel-label,
+            .clinical-table th,
+            .time-badge {
+                color: #475569 !important;
+            }
+
+            .rec-item,
+            .explanation-text,
+            .intel-cell,
+            .alert-clean {
+                background: #f8fafc !important;
+                border: 1px solid #e2e8f0 !important;
+                color: #0f172a !important;
+            }
+
+            .main-layout {
+                display: block !important;
+            }
+
+            .feature-grid {
+                grid-template-columns: repeat(4, 1fr) !important;
+            }
+
+            .param-chart-wrapper {
+                height: 220px !important;
+                max-height: 220px !important;
+            }
+        }
+
+        .print-only-header {
+            display: none;
+        }
+
+        /* =========================================================
+           RESPONSIVE MOBILE RULES
+           ========================================================= */
+        @media (max-width: 900px) {
+            .hero-card {
+                grid-template-columns: 1fr;
+            }
+
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .param-chart-wrapper {
+                height: 250px;
+                max-height: 260px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 14px 10px;
+            }
+
+            .header-nav {
+                padding: 14px 16px;
+            }
+
+            .hero-card {
+                padding: 20px 16px;
+            }
+
+            .patient-name {
+                font-size: 24px;
+            }
+
+            .probability-value {
+                font-size: 38px;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .intelligence-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .param-chart-wrapper {
+                height: 230px;
+                max-height: 240px;
+            }
+
+            .bottom-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .back-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="analytics-wrapper">
 
-    <div class="header">
+    <!-- PRINT-ONLY HEADER -->
+    <div class="print-only-header">
+        <h1>Cardiovascular Clinical AI Assessment Report</h1>
+        <p>Patient ID: {{ patient['patient_id'] }} &bull; Assessed: {{ patient['timestamp'] }} &bull; Clinical Decision Support System</p>
+    </div>
 
-        <h2>🧾 Patient Clinical Analytics</h2>
+    <!-- TOP NAVIGATION & ACTION BAR -->
+    <header class="header-nav header">
+        <div class="brand-section">
+            <div class="brand-icon">&#x1FA78;</div>
+            <div class="brand-titles">
+                <h2>&#x1F9FE; Patient Clinical Analytics</h2>
+                <p>Cardiovascular Decision Support &bull; De-identified Patient Profile</p>
+            </div>
+        </div>
 
         <div class="actions">
-
-            <!-- ✅ FIXED PDF -->
+            <!-- DOWNLOAD REPORT PDF -->
             <a href="{{ url_for('download_report', patient_id=patient['patient_id']) }}"
-               class="btn btn-download">📄 Download PDF</a>
+               class="btn btn-download">
+                &#x1F4C4; Download PDF
+            </a>
 
+            <!-- PRINT REPORT -->
             <button onclick="window.print()" class="btn btn-print">
-                🖨 Print Report
+                &#x1F5A8;&#xFE0F; Print Report
             </button>
 
-            <!-- ✅ FIXED RISK -->
+            <!-- RISK LEVEL BADGE -->
             {% if patient["risk_level"] == "LOW" %}
-                <span class="badge low">LOW RISK</span>
+                <span class="badge low">&#x25CF; LOW RISK</span>
             {% elif patient["risk_level"] == "MODERATE" %}
-                <span class="badge moderate">MODERATE RISK</span>
+                <span class="badge moderate">&#x25CF; MODERATE RISK</span>
             {% else %}
-                <span class="badge high">HIGH RISK</span>
+                <span class="badge high">&#x25CF; HIGH RISK</span>
             {% endif %}
+
+            <a href="{{ url_for('history') }}" class="btn btn-nav-muted">&#x1F4C1; History</a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-nav-muted">&#x1F4CA; Dashboard</a>
         </div>
+    </header>
 
-    </div>
-
-    <!-- ✅ FIXED NAME + PROBABILITY -->
-    <div class="hero">
-        <div class="patient-name">{{ patient['patient_name'] }}</div>
-        <div class="probability">{{ patient['probability'] }}%</div>
-    </div>
-
-    <div class="main-layout">
-
-        <!-- LEFT -->
-        <div class="left">
-
-            <div class="recommendation">
-                <h4>🧠 AI Clinical Recommendation</h4>
-
-                <ul style="margin-top:10px; padding-left:18px;">
-                    {% for rec in patient["recommendations"] %}
-                    <li style="margin-bottom:6px;">{{ rec }}</li>
-                    {% endfor %}
-                </ul>
+    <!-- PATIENT HERO & RISK OVERVIEW -->
+    <div class="hero-card hero">
+        <div class="hero-left">
+            <div class="patient-meta-tags">
+                <span class="id-badge">ID: {{ patient['patient_id'] }}</span>
+                <span class="time-badge">&#x1F4C5; {{ patient['timestamp'] }}</span>
             </div>
 
-            <div class="recommendation" style="margin-top:15px;">
-                <h4>🧠 AI Clinical Explanation</h4>
-                
-                <p>{{ patient["explanation"] }}</p>
-            </div>
-            <div class="recommendation" style="margin-top:15px; border-left:6px solid #ef4444;">
-                    <h4>⚠️ Clinical Risk Alerts</h4>
+            <div class="patient-name">{{ patient['patient_name'] | format_patient_name }}</div>
 
-                    {% if patient["alerts"] %}
-                    <ul style="margin-top:10px; padding-left:18px;">
-                    {% for alert in patient["alerts"] %}
-                    <li style="margin-bottom:6px; color:#dc2626; font-weight:500;">
-                        {{ alert }}
-                    </li>
-                        {% endfor %}
-                    </ul>
+            <div class="hero-stat-row">
+                <div class="probability probability-value">{{ patient['probability'] }}%</div>
+                <div>
+                    <div class="probability-label">Statistical Cardiovascular Risk</div>
+                    <div style="margin-top: 4px;">
+                        {% if patient['result'] == 'Present' %}
+                            <span class="pred-status pred-present">Cardiac Disease Risk Indicated</span>
                         {% else %}
-                    <p style="color:#16a34a;">No critical alerts detected.</p>
-                     {% endif %}
+                            <span class="pred-status pred-absent">Low Cardiac Disease Risk</span>
+                        {% endif %}
+                    </div>
                 </div>
-
-            <!-- Clinical Feature Grid with Dynamic Status -->
-            <div class="feature-grid">
-
-                <div class="card {% if patient.get('Cholesterol Status') == 'High' %}danger{% elif patient.get('Cholesterol Status') == 'Low' %}warning{% else %}normal{% endif %}">
-                    <h4>Cholesterol (mg/dL)</h4>
-                    <p>{{ patient['chol'] }}</p>
-                    <small style="opacity:0.85;">Status: {{ patient.get('Cholesterol Status', 'Normal') }}</small>
-                </div>
-
-                <div class="card {% if patient.get('Resting BP Status') == 'High' %}danger{% elif patient.get('Resting BP Status') == 'Low' %}warning{% else %}normal{% endif %}">
-                    <h4>Resting BP (mmHg)</h4>
-                    <p>{{ patient['trestbps'] }}</p>
-                    <small style="opacity:0.85;">Status: {{ patient.get('Resting BP Status', 'Normal') }}</small>
-                </div>
-
-                <div class="card {% if patient.get('Max Heart Rate Status') == 'High' %}danger{% elif patient.get('Max Heart Rate Status') == 'Low' %}warning{% else %}normal{% endif %}">
-                    <h4>Max Heart Rate (bpm)</h4>
-                    <p>{{ patient['thalach'] }}</p>
-                    <small style="opacity:0.85;">Status: {{ patient.get('Max Heart Rate Status', 'Normal') }}</small>
-                </div>
-
-                <div class="card {% if patient.get('ST Depression Status') == 'High' %}danger{% elif patient.get('ST Depression Status') == 'Low' %}warning{% else %}normal{% endif %}">
-                    <h4>ST Depression (mm)</h4>
-                    <p>{{ patient['oldpeak'] }}</p>
-                    <small style="opacity:0.85;">Status: {{ patient.get('ST Depression Status', 'Normal') }}</small>
-                </div>
-
             </div>
 
-            <!-- BAR GRAPH -->
-            <div class="chart-box">
-                <h3>📊 Clinical Parameter Overview</h3>
-                <canvas id="featureChart"></canvas>
+            <div class="disclaimer-subtext">
+                &#x2695;&#xFE0F; <strong>Decision Support Estimate:</strong> Evaluated via standard logistic regression estimation. Probability reflects computational risk stratification and does not replace diagnostic angiography, echocardiography, or physician clinical evaluation.
             </div>
-
         </div>
 
-        <!-- RIGHT -->
-        <div class="right">
-
-            <!-- DONUT -->
-        <div class="donut-box">
-
+        <div class="hero-right">
             <div class="donut-container">
                 <canvas id="riskChart"></canvas>
-
-                 <!-- 🔥 CENTER TEXT -->
                 <div class="chart-center">
                     <div class="chart-value">{{ patient['probability'] }}%</div>
                     <div class="chart-label">{{ patient['risk_level'] }}</div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- CLINICAL PARAMETER STATUS CARDS -->
+    <div class="section-heading">
+        <span>&#x1FA7A;</span>
+        <span>Key Hemodynamic Biomarkers</span>
+    </div>
+
+    <div class="feature-grid">
+        <!-- Cholesterol -->
+        <div class="card {% if patient.get('Cholesterol Status') == 'High' %}danger{% elif patient.get('Cholesterol Status') == 'Low' %}warning{% else %}normal{% endif %}">
+            <h4>Serum Cholesterol</h4>
+            <p>{{ patient['chol'] }} <span style="font-size:14px; font-weight:400; color:#94a3b8;">mg/dL</span></p>
+            <span class="card-status-badge">Status: {{ patient.get('Cholesterol Status', 'Normal') }}</span>
+        </div>
+
+        <!-- Resting Blood Pressure -->
+        <div class="card {% if patient.get('Resting BP Status') == 'High' %}danger{% elif patient.get('Resting BP Status') == 'Low' %}warning{% else %}normal{% endif %}">
+            <h4>Resting Blood Pressure</h4>
+            <p>{{ patient['trestbps'] }} <span style="font-size:14px; font-weight:400; color:#94a3b8;">mmHg</span></p>
+            <span class="card-status-badge">Status: {{ patient.get('Resting BP Status', 'Normal') }}</span>
+        </div>
+
+        <!-- Max Heart Rate -->
+        <div class="card {% if patient.get('Max Heart Rate Status') == 'High' %}danger{% elif patient.get('Max Heart Rate Status') == 'Low' %}warning{% else %}normal{% endif %}">
+            <h4>Max Heart Rate (Achieved)</h4>
+            <p>{{ patient['thalach'] }} <span style="font-size:14px; font-weight:400; color:#94a3b8;">bpm</span></p>
+            <span class="card-status-badge">Status: {{ patient.get('Max Heart Rate Status', 'Normal') }}</span>
+        </div>
+
+        <!-- ST Depression -->
+        <div class="card {% if patient.get('ST Depression Status') == 'High' %}danger{% elif patient.get('ST Depression Status') == 'Low' %}warning{% else %}normal{% endif %}">
+            <h4>ST Depression (Oldpeak)</h4>
+            <p>{{ patient['oldpeak'] }} <span style="font-size:14px; font-weight:400; color:#94a3b8;">mm</span></p>
+            <span class="card-status-badge">Status: {{ patient.get('ST Depression Status', 'Normal') }}</span>
+        </div>
+    </div>
+
+    <!-- MAIN TWO-COLUMN CONTENT LAYOUT -->
+    <div class="main-layout">
+
+        <!-- LEFT COLUMN: RECOMMENDATIONS, EXPLANATION, ALERTS -->
+        <div class="content-col left">
+
+            <!-- AI RECOMMENDATIONS -->
+            <div class="panel panel-recommendation recommendation">
+                <div class="panel-header">
+                    <h4>🧠 AI Clinical Recommendation</h4>
+                    <span style="font-size:12px; color:#94a3b8;">Decision Guidance</span>
+                </div>
+                <ul class="rec-list">
+                    {% for rec in patient["recommendations"] %}
+                    <li class="rec-item">{{ rec }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- AI EXPLANATION -->
+            <div class="panel panel-explanation recommendation">
+                <div class="panel-header">
+                    <h4>🧠 AI Clinical Explanation</h4>
+                    <span style="font-size:12px; color:#94a3b8;">Biomarker Context</span>
+                </div>
+                <p class="explanation-text">{{ patient["explanation"] }}</p>
+            </div>
+
+            <!-- RISK ALERTS -->
+            <div class="panel panel-alerts recommendation alert-box">
+                <div class="panel-header">
+                    <h4>⚠️ Clinical Risk Alerts</h4>
+                    <span style="font-size:12px; color:#94a3b8;">Safety Flags</span>
+                </div>
+                {% if patient["alerts"] %}
+                <ul class="alert-list">
+                    {% for alert in patient["alerts"] %}
+                    <li class="alert-item {% if '🚨' in alert %}alert-critical{% else %}alert-warning{% endif %}">
+                        {{ alert }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="alert-clean">&#x2705; No critical alerts detected.</p>
+                {% endif %}
+            </div>
+
+            <!-- PARAMETER OVERVIEW BAR CHART -->
+            <div class="chart-box">
+                <h3>&#x1F4CA; Clinical Parameter Overview</h3>
+                <div class="param-chart-wrapper">
+                    <canvas id="featureChart"></canvas>
+                </div>
+            </div>
 
         </div>
 
-            <div class="card intelligence">
-                <h3>📊 Risk Intelligence</h3>
+        <!-- RIGHT COLUMN: RISK INTELLIGENCE & PATIENT METRICS -->
+        <div class="content-col right">
 
-                <p><strong>Risk Level:</strong> {{ patient['risk_level'] }}</p>
+            <!-- RISK INTELLIGENCE -->
+            <div class="panel panel-intelligence card intelligence">
+                <div class="panel-header">
+                    <h4>&#x1F4CA; Risk Intelligence</h4>
+                    <span style="font-size:12px; color:#94a3b8;">Computational Profiling</span>
+                </div>
 
-                <p><strong>Confidence:</strong> {{ patient['confidence'] }}%</p>
+                <div class="intelligence-grid">
+                    <div class="intel-cell">
+                        <div class="intel-label">Risk Tier</div>
+                        <div class="intel-val" style="color:{% if patient['risk_level'] == 'HIGH' %}#ef4444{% elif patient['risk_level'] == 'MODERATE' %}#f59e0b{% else %}#10b981{% endif %};">
+                            {{ patient['risk_level'] }}
+                        </div>
+                    </div>
 
-                <p><strong>Key Driver:</strong> {{ patient['key_driver'] }}</p>
+                    <div class="intel-cell">
+                        <div class="intel-label">Confidence</div>
+                        <div class="intel-val">{{ patient['confidence'] }}%</div>
+                    </div>
 
-                <p><strong>Trend:</strong> {{ patient['trend'] }}</p>
+                    <div class="intel-cell" style="grid-column: span 2;">
+                        <div class="intel-label">Primary Key Driver</div>
+                        <div class="intel-val">{{ patient['key_driver'] }}</div>
+                    </div>
+
+                    <div class="intel-cell" style="grid-column: span 2;">
+                        <div class="intel-label">Risk Trend</div>
+                        <div class="intel-val">{{ patient['trend'] }}</div>
+                    </div>
+                </div>
             </div>
 
-            <div class="panel-box">
-                <h4>📊 Risk Intelligence</h4>
+            <!-- PATIENT IDENTITY & ASSESSMENT RECORD -->
+            <div class="panel panel-box">
+                <div class="panel-header">
+                    <h4>&#x1F4CB; Assessment Record</h4>
+                    <span style="font-size:12px; color:#94a3b8;">Database Record</span>
+                </div>
 
-                <!-- ✅ FIXED -->
-                <p><strong>Prediction:</strong> {{ patient['result'] }}</p>
-                <p><strong>Patient ID:</strong> {{ patient['patient_id'] }}</p>
-                <p><strong>Assessment Time:</strong><br>{{ patient['timestamp'] }}</p>
+                <div class="intelligence-grid">
+                    <div class="intel-cell" style="grid-column: span 2;">
+                        <div class="intel-label">Patient Name</div>
+                        <div class="intel-val" style="font-weight:600; color:#f8fafc;">
+                            {{ patient['patient_name'] | format_patient_name }}
+                        </div>
+                    </div>
 
+                    <div class="intel-cell">
+                        <div class="intel-label">Model Prediction</div>
+                        <div class="intel-val">{{ patient['result'] }}</div>
+                    </div>
+
+                    <div class="intel-cell">
+                        <div class="intel-label">Probability</div>
+                        <div class="intel-val">{{ patient['probability'] }}%</div>
+                    </div>
+
+                    <div class="intel-cell" style="grid-column: span 2;">
+                        <div class="intel-label">Patient ID</div>
+                        <div class="intel-val" style="font-family:ui-monospace, SFMono-Regular, monospace; font-size:13px; color:#38bdf8;">
+                            {{ patient['patient_id'] }}
+                        </div>
+                    </div>
+
+                    <div class="intel-cell" style="grid-column: span 2;">
+                        <div class="intel-label">Assessment Time</div>
+                        <div class="intel-val" style="font-size:13px; color:#cbd5e1;">
+                            {{ patient['timestamp'] }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CLINICAL PARAMETER REFERENCE SUMMARY TABLE -->
+            <div class="table-panel">
+                <div class="panel-header">
+                    <h4>&#x1F9EC; Complete Feature Summary</h4>
+                    <span style="font-size:12px; color:#94a3b8;">13 Predictors</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="clinical-table">
+                        <thead>
+                            <tr>
+                                <th>Clinical Feature</th>
+                                <th>Recorded Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="param-name">Age / Sex</td>
+                                <td class="param-val">{{ patient.get('age', 'N/A') }} yrs &bull; {% if patient.get('sex') == 1 %}Male{% elif patient.get('sex') == 0 %}Female{% else %}{{ patient.get('sex', 'N/A') }}{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">Chest Pain Type</td>
+                                <td class="param-val">{{ patient.get('cp_text', patient.get('cp', 'N/A')) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">Resting BP</td>
+                                <td class="param-val">{{ patient.get('trestbps', 'N/A') }} mmHg</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">Cholesterol</td>
+                                <td class="param-val">{{ patient.get('chol', 'N/A') }} mg/dL</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">Fasting Blood Sugar</td>
+                                <td class="param-val">{% if patient.get('fbs') == 1 %}&gt; 120 mg/dL{% else %}&le; 120 mg/dL{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">Resting ECG</td>
+                                <td class="param-val">Type {{ patient.get('restecg', 'N/A') }}</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">Max Heart Rate</td>
+                                <td class="param-val">{{ patient.get('thalach', 'N/A') }} bpm</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">Exercise Angina</td>
+                                <td class="param-val">{% if patient.get('exang') == 1 %}Yes{% else %}No{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">ST Depression (oldpeak)</td>
+                                <td class="param-val">{{ patient.get('oldpeak', 'N/A') }} mm</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">ST Slope</td>
+                                <td class="param-val">Slope {{ patient.get('slope', 'N/A') }}</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">Major Vessels (ca)</td>
+                                <td class="param-val">{{ patient.get('ca', 'N/A') }} colored</td>
+                            </tr>
+                            <tr>
+                                <td class="param-name">Thalassemia</td>
+                                <td class="param-val">Type {{ patient.get('thal', 'N/A') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
         </div>
 
     </div>
 
-    <a href="{{ url_for('history') }}" class="back-btn">← Back to History</a>
+    <!-- BOTTOM ACTIONS -->
+    <div class="bottom-actions">
+        <a href="{{ url_for('history') }}" class="back-btn">&#x2190; Back to Patient History</a>
+        <div class="footer-note">
+            &copy; 2026 Multi-Disease Clinical AI Platform &bull; Heart Disease Clinical Intelligence
+        </div>
+    </div>
 
 </div>
 
@@ -505,50 +1232,105 @@ const patientId = "{{ patient['patient_id'] }}";
 const csrfToken = "{{ csrf_token() }}";
 const probability = {{ patient["probability"] }};
 
-/* DONUT */
-let color;
-
+/* DOUGHNUT RISK CHART */
+let riskColor;
 if (probability < 30) {
-    color = "#22c55e";   // Low → Green
+    riskColor = "#10b981";   // Low → Green
 } else if (probability < 70) {
-    color = "#f59e0b";   // Moderate → Orange
+    riskColor = "#f59e0b";   // Moderate → Amber
 } else {
-    color = "#ef4444";   // High → Red
+    riskColor = "#ef4444";   // High → Red
 }
+
 new Chart(document.getElementById('riskChart'), {
     type: 'doughnut',
     data: {
         datasets: [{
-            data: [probability, 100 - probability],
-            backgroundColor: [color, "#e5e7eb"],
+            data: [probability, Math.max(0, 100 - probability)],
+            backgroundColor: [riskColor, "rgba(148, 163, 184, 0.12)"],
             borderWidth: 0
         }]
     },
     options: {
-        cutout: '75%',
+        cutout: '76%',
+        responsive: true,
+        maintainAspectRatio: true,
         plugins: {
-            legend: { display: false }
+            legend: { display: false },
+            tooltip: { enabled: false }
         }
     }
 });
 
-/* BAR */
-new Chart(document.getElementById('featureChart'),{
-    type:'bar',
-    data:{
-        labels:['Cholesterol','Resting BP','Max HR','ST Depression'],
-        datasets:[{
-            data:[
-                {{ patient['chol'] }},
-                {{ patient['trestbps'] }},
-                {{ patient['thalach'] }},
-                {{ patient['oldpeak'] }}
-            ],
-            backgroundColor:'#2c5364'
-        }]
-    }
-});
-
+/* CLINICAL PARAMETER OVERVIEW BAR CHART */
+const featureCtx = document.getElementById('featureChart');
+if (featureCtx) {
+    new Chart(featureCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Cholesterol', 'Resting BP', 'Max HR', 'ST Depression'],
+            datasets: [{
+                label: 'Recorded Value',
+                data: [
+                    {{ patient['chol'] }},
+                    {{ patient['trestbps'] }},
+                    {{ patient['thalach'] }},
+                    {{ patient['oldpeak'] }}
+                ],
+                backgroundColor: [
+                    '#2563eb',
+                    '#0284c7',
+                    '#10b981',
+                    '#8b5cf6'
+                ],
+                borderRadius: 6,
+                maxBarThickness: 44,
+                barPercentage: 0.65,
+                categoryPercentage: 0.75
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    titleColor: '#f8fafc',
+                    bodyColor: '#e2e8f0',
+                    borderColor: '#334155',
+                    borderWidth: 1,
+                    padding: 10,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            const units = ['mg/dL', 'mmHg', 'bpm', 'mm'];
+                            const unit = units[context.dataIndex] || '';
+                            return 'Value: ' + context.parsed.y + ' ' + unit;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: { family: 'Inter', size: 12, weight: '500' }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(148, 163, 184, 0.1)' },
+                    ticks: {
+                        color: '#94a3b8',
+                        font: { family: 'Inter', size: 11 }
+                    }
+                }
+            }
+        }
+    });
+}
 </script>
 
 </body>
