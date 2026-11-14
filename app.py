@@ -148,6 +148,12 @@ REVERSE_FEATURE_MAP = {
 }
 
 # ------------------------------------------------------------
+# Database Initialization (Gunicorn Module Import & Startup)
+# Ensures all tables and initial admin account exist when Gunicorn starts
+# ------------------------------------------------------------
+init_db()
+
+# ------------------------------------------------------------
 # Required Production Model Artifacts
 # ------------------------------------------------------------
 

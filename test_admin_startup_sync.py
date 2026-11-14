@@ -224,6 +224,128 @@ class TestAdminStartupSync(unittest.TestCase):
         finally:
             conn.close()
 
+    def test_07_gunicorn_module_import_initializes_database(self):
+        """Simulate Gunicorn importing app:app with a pre-existing DB.
+        Verifies:
+        1. Gunicorn import initializes the database automatically.
+        2. Pre-existing admin password hash is 100% preserved.
+        3. Pre-existing Heart Disease records remain untouched.
+        4. Diabetes and Breast Cancer tables are created.
+        """
+        import subprocess
+        import sys
+
+        legacy_db = os.path.join(self.temp_dir, "legacy_prod_sim.db")
+        conn = sqlite3.connect(legacy_db)
+        conn.execute("""
+            CREATE TABLE users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                password TEXT NOT NULL
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE patients (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                patient_id TEXT,
+                patient_name TEXT,
+                age INTEGER,
+                sex INTEGER,
+                cp INTEGER,
+                trestbps INTEGER,
+                chol INTEGER,
+                fbs INTEGER,
+                restecg INTEGER,
+                thalach INTEGER,
+                exang INTEGER,
+                oldpeak REAL,
+                slope INTEGER,
+                ca INTEGER,
+                thal INTEGER,
+                result TEXT,
+                probability REAL,
+                risk_level TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        original_hash = generate_password_hash("OriginalPreexistingPassword2026!")
+        conn.execute("INSERT INTO users (username, password) VALUES (?, ?)", ("admin", original_hash))
+
+        patients_data = [
+            ("PID2026040101", "Synthetic Patient A", 48, 1, 1, 130, 240, 0, 1, 150, 0, 1.2, 2, 0, 3, "Present", 74.5, "MODERATE"),
+            ("PID2026040102", "Synthetic Patient B", 55, 0, 2, 140, 260, 1, 2, 160, 1, 2.5, 1, 1, 6, "Present", 91.0, "HIGH"),
+            ("PID2026040103", "Synthetic Patient C", 34, 1, 0, 120, 180, 0, 0, 175, 0, 0.0, 1, 0, 3, "Absent", 21.0, "LOW"),
+        ]
+        conn.executemany("""
+            INSERT INTO patients (
+                patient_id, patient_name, age, sex, cp, trestbps, chol, fbs,
+                restecg, thalach, exang, oldpeak, slope, ca, thal, result, probability, risk_level
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, patients_data)
+        conn.commit()
+        conn.close()
+
+        sub_env = os.environ.copy()
+        sub_env["DATABASE_PATH"] = legacy_db
+        sub_env["SECRET_KEY"] = "gunicorn-test-secret-key-32chars"
+        sub_env["ADMIN_DEFAULT_PASSWORD"] = "ShouldNotOverwritePass!"
+        sub_env["ADMIN_SYNC_ON_STARTUP"] = "false"
+        sub_env.pop("RENDER", None)
+        sub_env["FLASK_ENV"] = "production"
+
+        code = "from app import app; assert app is not None"
+        proc = subprocess.run(
+            [sys.executable, "-c", code],
+            env=sub_env,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        self.assertEqual(proc.returncode, 0, f"Module import failed: {proc.stderr}")
+
+        conn2 = sqlite3.connect(legacy_db)
+        conn2.row_factory = sqlite3.Row
+        try:
+            tables = [r[0] for r in conn2.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+            self.assertIn("diabetes_patients", tables)
+            self.assertIn("breast_cancer_patients", tables)
+
+            admin_row = conn2.execute("SELECT username, password FROM users WHERE username = 'admin'").fetchone()
+            self.assertEqual(admin_row["password"], original_hash)
+            self.assertTrue(check_password_hash(admin_row["password"], "OriginalPreexistingPassword2026!"))
+
+            patients_rows = conn2.execute("SELECT patient_id, patient_name, age, probability, risk_level FROM patients ORDER BY id").fetchall()
+            self.assertEqual(len(patients_rows), 3)
+            self.assertEqual(patients_rows[0]["patient_id"], "PID2026040101")
+            self.assertEqual(patients_rows[0]["patient_name"], "Synthetic Patient A")
+            self.assertEqual(patients_rows[1]["patient_id"], "PID2026040102")
+            self.assertEqual(patients_rows[2]["patient_id"], "PID2026040103")
+        finally:
+            conn2.close()
+
+    def test_08_repeated_initialization_idempotency_and_table_safety(self):
+        """Verify that repeated initialization calls (Procfile CLI + multiple Gunicorn workers) are safe and idempotent."""
+        os.environ["ADMIN_DEFAULT_PASSWORD"] = "IdempotentPass123!"
+        os.environ["ADMIN_SYNC_ON_STARTUP"] = "false"
+
+        init_db()
+        init_db()
+        init_db()
+
+        conn = get_db_connection()
+        try:
+            integrity = conn.execute("PRAGMA integrity_check").fetchone()[0]
+            self.assertEqual(integrity, "ok")
+
+            admin_count = conn.execute("SELECT COUNT(*) FROM users WHERE username = 'admin'").fetchone()[0]
+            self.assertEqual(admin_count, 1)
+
+            tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+            for expected_table in ("users", "patients", "diabetes_patients", "breast_cancer_patients"):
+                self.assertIn(expected_table, tables)
+        finally:
+            conn.close()
+
 
 if __name__ == "__main__":
     unittest.main()
