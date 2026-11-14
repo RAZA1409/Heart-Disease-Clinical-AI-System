@@ -8,10 +8,13 @@ import joblib
 import os
 import datetime
 import webbrowser
+import io
+import hmac
+import secrets
 import sqlite3
 from google import genai
 from google.genai import types
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, session, redirect, url_for, render_template_string, abort, make_response
 from werkzeug.security import check_password_hash, generate_password_hash
 from database import get_db_connection, init_db
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
@@ -1066,6 +1069,203 @@ def test_patient_context(patient_id):
 #     except Exception as e:
 
 #         return f"AI Error: {str(e)}"
+
+
+# ------------------------------------------------------------
+# TEMPORARY: Secure Database Backup Endpoint (Production Hotfix)
+# ------------------------------------------------------------
+
+BACKUP_FORM_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Database Backup | Clinical AI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #0f172a;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        .backup-card {
+            background: #1e293b;
+            padding: 2.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid #334155;
+            max-width: 460px;
+            width: 100%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .header-icon {
+            font-size: 1.75rem;
+        }
+        h2 {
+            margin: 0;
+            color: #38bdf8;
+            font-size: 1.35rem;
+            font-weight: 700;
+        }
+        p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 0 0 1.5rem 0;
+        }
+        .warning-box {
+            background: #0f172a;
+            border-left: 3px solid #38bdf8;
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.825rem;
+            color: #cbd5e1;
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #e2e8f0;
+        }
+        input[type="password"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.375rem;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: #f8fafc;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            transition: border-color 0.15s ease-in-out;
+        }
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+        }
+        .btn-submit {
+            display: block;
+            width: 100%;
+            margin-top: 1.5rem;
+            padding: 0.85rem 1rem;
+            background: #0284c7;
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s ease-in-out;
+            text-align: center;
+        }
+        .btn-submit:hover {
+            background: #0369a1;
+        }
+        .cancel-link {
+            display: block;
+            text-align: center;
+            margin-top: 1.25rem;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.15s ease-in-out;
+        }
+        .cancel-link:hover {
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="backup-card">
+        <div class="header">
+            <span class="header-icon">&#128190;</span>
+            <h2>Production Database Backup</h2>
+        </div>
+        <p>Create a consistent, point-in-time snapshot of the active SQLite database using the online backup API.</p>
+        <div class="warning-box">
+            This endpoint is temporary and restricted to verified administrators. Confirm your password to initiate the download.
+        </div>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label for="admin_password">Confirm Admin Password:</label>
+            <input type="password" id="admin_password" name="admin_password" required autofocus autocomplete="current-password" placeholder="Enter administrator password">
+            <button type="submit" class="btn-submit">Download Database Backup (.sqlite)</button>
+        </form>
+        <a href="{{ url_for('dashboard') }}" class="cancel-link">&larr; Return to Dashboard</a>
+    </div>
+</body>
+</html>"""
+
+
+@app.route("/admin/backup-database", methods=["GET", "POST"])
+def admin_backup_database():
+    # 1. Require session["user"] == "admin"
+    if "user" not in session or session.get("user") != "admin":
+        return redirect(url_for("login"))
+
+    # 2. GET: Display confirmation form with explicit CSRF token
+    if request.method == "GET":
+        token = secrets.token_hex(32)
+        session["backup_csrf_token"] = token
+        return render_template_string(BACKUP_FORM_HTML, csrf_token=token)
+
+    # 3. POST Validation: CSRF Token Check using hmac.compare_digest()
+    submitted_token = request.form.get("csrf_token", "")
+    session_token = session.get("backup_csrf_token", "")
+    if not session_token or not submitted_token or not hmac.compare_digest(submitted_token, session_token):
+        abort(400)
+
+    # 4. POST Validation: Admin Password Confirmation
+    submitted_password = request.form.get("admin_password", "")
+    if not submitted_password:
+        abort(400)
+
+    conn = get_db_connection()
+    try:
+        user_row = conn.execute("SELECT password FROM users WHERE username = 'admin'").fetchone()
+        if not user_row or not check_password_hash(user_row["password"], submitted_password):
+            abort(403)
+    finally:
+        conn.close()
+
+    # Invalidate CSRF token after successful validation (single-use)
+    session.pop("backup_csrf_token", None)
+
+    # 5. SQLite Connection.backup() to in-memory destination
+    source_conn = get_db_connection()
+    dest_conn = sqlite3.connect(":memory:")
+    try:
+        source_conn.backup(dest_conn)
+        backup_bytes = dest_conn.serialize()
+    finally:
+        dest_conn.close()
+        source_conn.close()
+
+    # 6. Return as production_database_backup.sqlite with security headers
+    response = make_response(send_file(
+        io.BytesIO(backup_bytes),
+        as_attachment=True,
+        download_name="production_database_backup.sqlite",
+        mimetype="application/x-sqlite3"
+    ))
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 # ------------------------------------------------------------
