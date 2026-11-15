@@ -244,7 +244,10 @@ class Phase8GPatientDetailTests(unittest.TestCase):
 
     def test_09_no_innerhtml_in_template(self):
         """Verify innerHTML is completely absent from patient_detail.html."""
-        template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", "patient_detail.html")
+        proj_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        template_path = os.path.join(proj_root, "templates", "patient_detail.html")
+        if not os.path.exists(template_path):
+            template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", "patient_detail.html")
         with open(template_path, "r", encoding="utf-8") as f:
             content = f.read()
         self.assertNotIn("innerHTML", content, "innerHTML must not be used in patient_detail.html (XSS vulnerability)")

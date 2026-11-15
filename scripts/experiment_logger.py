@@ -2,7 +2,8 @@ import csv
 import os
 from datetime import datetime
 
-RESULTS_FILE = "results.csv"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RESULTS_FILE = os.path.join(PROJECT_ROOT, "results.csv")
 
 def log_experiment(method, accuracy, params):
     file_exists = os.path.isfile(RESULTS_FILE)

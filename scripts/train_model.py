@@ -28,11 +28,16 @@ from deap import base, creator, tools, algorithms
 random.seed(42)
 np.random.seed(42)
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+dataset_path = os.path.join(PROJECT_ROOT, "Heart_Disease_Cleaned.csv")
+model_dir = os.path.join(PROJECT_ROOT, "models")
+os.makedirs(model_dir, exist_ok=True)
+
 # ============================================================
 # 1. LOAD DATASET
 # ============================================================
 
-df = pd.read_csv("Heart_Disease_Cleaned.csv")
+df = pd.read_csv(dataset_path)
 df = df.dropna()
 
 X = df.drop("Heart Disease", axis=1)
@@ -147,7 +152,7 @@ comparison = {
     "Grid": grid_test_accuracy
 }
 
-joblib.dump(comparison, "models/optimization_comparison.pkl")
+joblib.dump(comparison, os.path.join(model_dir, "optimization_comparison.pkl"))
 # ============================================================
 # 4. CONFUSION MATRIX
 # ============================================================
@@ -160,14 +165,11 @@ print(cm)
 # 5. SAVE CONVERGENCE PLOT
 # ============================================================
 
-if not os.path.exists("models"):
-    os.makedirs("models")
-
 plt.plot(fitness_history)
 plt.title("GA Convergence Curve")
 plt.xlabel("Generation")
 plt.ylabel("Cross Validation Accuracy")
-plt.savefig("models/ga_convergence.png")
+plt.savefig(os.path.join(model_dir, "ga_convergence.png"))
 plt.close()
 
 # ============================================================
@@ -175,9 +177,9 @@ plt.close()
 # (Saves to separate ga_* files to protect production artifacts)
 # ============================================================
 
-joblib.dump(ga_model, "models/ga_model.pkl")
-joblib.dump(scaler, "models/ga_scaler.pkl")
-joblib.dump(X.columns.tolist(), "models/ga_feature_columns.pkl")
+joblib.dump(ga_model, os.path.join(model_dir, "ga_model.pkl"))
+joblib.dump(scaler, os.path.join(model_dir, "ga_scaler.pkl"))
+joblib.dump(X.columns.tolist(), os.path.join(model_dir, "ga_feature_columns.pkl"))
 
 print("\nExperimental GA Model, Scaler, and Feature Columns Saved Successfully!")
 print("Production artifacts (best_model.pkl, scaler.pkl) remain protected.")
