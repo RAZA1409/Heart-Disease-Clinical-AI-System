@@ -19,7 +19,15 @@ from sklearn.metrics import (
     f1_score, roc_auc_score, confusion_matrix, roc_curve
 )
 
-def train_diabetes_model(data_path="diabetes.csv", output_dir="models"):
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_DATA_PATH = os.path.join(PROJECT_ROOT, "data", "diabetes.csv") if os.path.exists(os.path.join(PROJECT_ROOT, "data", "diabetes.csv")) else os.path.join(PROJECT_ROOT, "diabetes.csv")
+DEFAULT_OUTPUT_DIR = os.path.join(PROJECT_ROOT, "models")
+
+def train_diabetes_model(data_path=None, output_dir=None):
+    if data_path is None:
+        data_path = DEFAULT_DATA_PATH
+    if output_dir is None:
+        output_dir = DEFAULT_OUTPUT_DIR
     print(f"Loading diabetes dataset from {data_path}...")
     df = pd.read_csv(data_path)
 

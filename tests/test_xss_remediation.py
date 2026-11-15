@@ -22,8 +22,9 @@ class AIAssistantXSSRemediationTest(unittest.TestCase):
         app.config['TESTING'] = True
         cls.client = app.test_client()
 
+        proj_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         template_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
+            proj_root,
             "templates",
             "patient_detail.html"
         )

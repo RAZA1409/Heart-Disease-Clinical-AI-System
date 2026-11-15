@@ -404,7 +404,10 @@ class Phase8FBreastCancerFormTests(unittest.TestCase):
         self.assertAlmostEqual(record["mean_radius"], 13.54, places=2)
 
         # 2. Confirm record is NOT in the real development database
-        real_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "database.db")
+        proj_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        real_db_path = os.path.join(proj_root, "database.db")
+        if not os.path.exists(real_db_path):
+            real_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "database.db")
         if os.path.exists(real_db_path):
             real_conn = sqlite3.connect(real_db_path)
             real_record = real_conn.execute("SELECT * FROM breast_cancer_patients WHERE patient_id = ?", (bcpid,)).fetchone()

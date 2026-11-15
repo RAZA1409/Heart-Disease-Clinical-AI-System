@@ -262,11 +262,10 @@ class Phase6BConsistencyCorrectionsTest(unittest.TestCase):
 
     def test_05_result_template_clinical_disclaimer_and_wording(self):
         """Verify templates/result.html uses 'Statistical Assessment' and contains decision support disclaimer banner."""
-        template_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "templates",
-            "result.html"
-        )
+        proj_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        template_path = os.path.join(proj_root, "templates", "result.html")
+        if not os.path.exists(template_path):
+            template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", "result.html")
         with open(template_path, "r", encoding="utf-8") as f:
             content = f.read()
 

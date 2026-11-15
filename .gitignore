@@ -27,6 +27,8 @@ records/*.csv
 # Downloaded / raw datasets
 diabetes.csv
 breast_cancer.csv
+data/diabetes.csv
+data/breast_cancer.csv
 wdbc.data
 wdbc.names
 

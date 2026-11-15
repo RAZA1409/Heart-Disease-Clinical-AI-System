@@ -8,7 +8,56 @@ GitHub Repository: https://github.com/RAZA1409/Heart-Disease-Clinical-AI-System
 
 ---
 
-## Table of Contents
+## Table of ContentsI have reviewed and approved Stage 2 implementation with the following modifications.
+
+Proceed with the approved repository organization.
+
+### Approved changes
+
+1. Move all 18 test modules into `tests/`.
+2. Move the five review `.txt` files into `reports/archive/`.
+3. Move the five offline training and experiment scripts into `scripts/`.
+4. Archive `auth.py` into `docs/archive/` instead of deleting it.
+5. Preserve the existing root application architecture.
+
+### Required modifications to the original proposal
+
+1. Keep `Heart_Disease_Cleaned.csv` at the project root for now. Do not move it.
+2. Move `diabetes.csv` and `breast_cancer.csv` into `data/` only after updating and verifying every reference.
+3. Keep `results.csv` at the root until all references and dependencies are verified.
+4. Do not move or delete `heart_disease.db` until its status and purpose are independently confirmed. If confirmed to be an obsolete empty file, archive it.
+5. Keep all model artifacts in their current `models/` locations. Do not rename or reorganize them.
+6. Do not move databases, patient records, production backups, `.env`, virtual environments, templates or static assets.
+
+### Implementation requirements
+
+- Use `git mv` for tracked file movements.
+- Update all affected imports, paths and test references.
+- Preserve the exact Gunicorn entry point: `gunicorn app:app --bind 0.0.0.0:$PORT`.
+- Preserve all existing Flask routes and functionality.
+- Keep all 162 tests passing.
+- Update README.md to reflect the actual final folder structure.
+- Update `.gitignore` only where necessary.
+- Do not modify production database contents or schemas.
+
+### Final safety restrictions
+
+- Do not commit, push, merge or deploy.
+- Do not use `git reset --hard`, `git clean`, or broad deletion commands.
+- Do not stage all files.
+- Do not delete uncertain or unreferenced files without explaining why.
+- Preserve all untracked user files and existing review history.
+- Stop if a critical test fails; do not hide or bypass failures.
+
+After implementation, provide:
+1. Final folder structure.
+2. Complete list of moved and archived files.
+3. List of modified files.
+4. Test results.
+5. Git status.
+6. Any unresolved issues.
+
+Leave all changes available for my final review.v
 
 - [Project Overview](#project-overview)
 - [Key Features](#key-features)
@@ -191,7 +240,7 @@ The platform incorporates three distinct supervised machine learning pipelines f
 
 ### Heart Disease Prediction (Cardiovascular Module)
 
-**Authoritative Pipeline Script:** `model_comparison.py`
+**Authoritative Pipeline Script:** `scripts/model_comparison.py`
 **Production Classifier:** Logistic Regression
 **Primary Artifacts:** `models/best_model.pkl`, `models/scaler.pkl`, `models/feature_columns.pkl`, `models/model_info.pkl`
 
@@ -233,7 +282,7 @@ During runtime in `app.py`:
 
 ### Experimental Genetic Algorithm Optimization
 
-**Research Script:** `train_model.py`
+**Research Script:** `scripts/train_model.py`
 **Purpose:** Academic study of evolutionary algorithm-based hyperparameter tuning.
 **Frameworks:** DEAP (Distributed Evolutionary Algorithms in Python) + scikit-learn.
 **Artifacts Generated:** `models/ga_model.pkl`, `models/ga_scaler.pkl`, `models/ga_feature_columns.pkl`, `models/ga_convergence.png`, `results.csv`.
@@ -252,7 +301,7 @@ During runtime in `app.py`:
 
 ### Diabetes Mellitus Prediction (Metabolic Module)
 
-**Authoritative Pipeline Script:** `train_diabetes.py`
+**Authoritative Pipeline Script:** `scripts/train_diabetes.py`
 **Production Classifier:** Random Forest Classifier (Balanced)
 **Primary Artifacts:** `models/diabetes_pipeline.pkl`, `models/diabetes_feature_columns.pkl`, `models/diabetes_model_info.pkl`
 
@@ -277,7 +326,7 @@ Trained on the Pima Indians Diabetes Dataset comprising 768 patient records and 
 
 ### Breast Cancer Prediction (Oncology Module)
 
-**Authoritative Pipeline Script:** `train_breast_cancer.py`
+**Authoritative Pipeline Script:** `scripts/train_breast_cancer.py`
 **Production Classifier:** Support Vector Machine (RBF Kernel, Balanced)
 **Primary Artifacts:** `models/breast_cancer_pipeline.pkl`, `models/breast_cancer_feature_columns.pkl`, `models/breast_cancer_model_info.pkl`
 
@@ -349,21 +398,21 @@ Heart_Disease_Optimization_Project/
 ├── app.py                               # Core Flask web application and routing (2571 lines)
 ├── run.py                               # Local development server launcher with status logging
 ├── predict.py                           # Interactive CLI prediction tool for heart disease
-├── database.py                          # SQLite database schema, connections, and admin bootstrap
-├── init_db.py                           # Standalone database initialization script
-├── risk_config.py                       # Centralized risk classification thresholds and color schemes
-├── model_comparison.py                  # Production heart disease training, comparison, and export
-├── train_model.py                       # Experimental GA-based hyperparameter tuning for SVC
-├── train_diabetes.py                    # Production diabetes pipeline training and export
-├── train_breast_cancer.py               # Production breast cancer pipeline training and export
-├── experiment_logger.py                 # CSV experiment logger for evolutionary algorithm runs
 ├── main.py                              # Command-line helper displaying execution instructions
-├── auth.py                              # Legacy authentication archive (commented out)
+├── init_db.py                           # Standalone database initialization script
+├── database.py                          # SQLite database schema, connections, and admin bootstrap
+├── risk_config.py                       # Centralized risk classification thresholds and color schemes
 ├── requirements.txt                     # Pinned project dependencies for pip
 ├── runtime.txt                          # Python version specification for Render (python-3.11.9)
 ├── Procfile                             # Process file defining the web worker command
+├── README.md                            # Primary technical documentation
 ├── .env.example                         # Template documenting required environment variables
 ├── .gitignore                           # Git ignore rules for environments, databases, and caches
+├── Heart_Disease_Cleaned.csv            # Cleveland Heart Disease dataset (tracked)
+├── results.csv                          # Historical experiment results log (tracked)
+├── data/                                # Project dataset storage
+│   ├── diabetes.csv                     # Pima Indians Diabetes dataset (ignored by Git)
+│   └── breast_cancer.csv                # WDBC reference dataset (ignored by Git)
 ├── models/                              # Serialized model artifacts and metadata
 │   ├── best_model.pkl                   # Production Logistic Regression classifier
 │   ├── scaler.pkl                       # Production StandardScaler for heart disease
@@ -380,6 +429,32 @@ Heart_Disease_Optimization_Project/
 │   ├── ga_scaler.pkl                    # Experimental GA scaler artifact
 │   ├── ga_feature_columns.pkl           # Experimental GA feature list
 │   └── ga_convergence.png               # Plot of GA fitness across generations
+├── scripts/                             # Offline model training & optimization pipelines
+│   ├── model_comparison.py              # Production heart disease training, comparison, and export
+│   ├── train_diabetes.py                # Production diabetes pipeline training and export
+│   ├── train_breast_cancer.py           # Production breast cancer pipeline training and export
+│   ├── train_model.py                   # Experimental GA-based hyperparameter tuning for SVC
+│   └── experiment_logger.py             # CSV experiment logger for evolutionary algorithm runs
+├── tests/                               # Automated test suite (all 18 test suites)
+│   ├── __init__.py                      # Test package marker
+│   ├── test_admin_startup_sync.py
+│   ├── test_chatbot_multi_disease.py
+│   ├── test_patient_name_persistence_and_display.py
+│   ├── test_phase1_verification.py
+│   ├── test_phase2_verification.py
+│   ├── test_phase3_verification.py
+│   ├── test_phase4_verification.py
+│   ├── test_phase5_verification.py
+│   ├── test_phase6b_verification.py
+│   ├── test_phase8a_backend_aggregation.py
+│   ├── test_phase8b_dashboard_ui.py
+│   ├── test_phase8c_analytics_ui.py
+│   ├── test_phase8d_form_ui.py
+│   ├── test_phase8e_diabetes_form.py
+│   ├── test_phase8f_breast_cancer_form.py
+│   ├── test_phase8g_patient_detail.py
+│   ├── test_phase8h_auth_and_result.py
+│   └── test_xss_remediation.py
 ├── templates/                           # Jinja2 HTML presentation templates
 │   ├── login.html                       # Clinician authentication interface
 │   ├── forgot_password.html             # Password recovery interface
@@ -403,9 +478,19 @@ Heart_Disease_Optimization_Project/
 │   └── ai_chatbot.html                  # Reusable clinical assistant chat widget
 ├── static/
 │   └── style.css                        # Complete responsive styling stylesheet
-├── docs/
-│   └── HEART_MODEL_TRAINING.md          # Architectural notes on model comparison
-└── test_*.py                            # Automated test suite (18 test files, 162 tests)
+├── reports/                             # Technical audit & pre-deployment reports
+│   ├── PR1_FAST_PRODUCTION_AUDIT.md     # Pre-deployment audit report
+│   └── archive/                         # Preserved phase diff & review logs
+│       ├── diabetes_form_diff_review.txt
+│       ├── phase5_review.txt
+│       ├── phase6b_diff_review.txt
+│       ├── phase8f_final_diff.txt
+│       └── phase8f_html_diff.txt
+└── docs/                                # Technical documentation
+    ├── HEART_MODEL_TRAINING.md          # Architectural notes on model comparison
+    └── archive/                         # Deprecated/historical files
+        ├── auth.py                      # Archived legacy authentication script
+        └── heart_disease.db.bak         # Archived 0-byte legacy database
 ```
 
 ---
@@ -609,9 +694,9 @@ python init_db.py
 ### 6. Verify Model Artifacts (Optional Retraining)
 Pre-trained model artifacts are included in `models/`. If you wish to retrain them from scratch:
 ```powershell
-python model_comparison.py
-python train_diabetes.py
-python train_breast_cancer.py
+python scripts/model_comparison.py
+python scripts/train_diabetes.py
+python scripts/train_breast_cancer.py
 ```
 
 ### 7. Run the Application
@@ -665,7 +750,7 @@ The project includes an extensive test suite built on Python's native `unittest`
 ### Running the Test Suite
 Execute test discovery from the project root:
 ```powershell
-python -m unittest discover -s . -p "test_*.py" -v
+python -m unittest discover -s tests -p "test_*.py" -v
 ```
 
 ### Test Suite Summary

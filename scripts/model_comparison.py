@@ -31,13 +31,18 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+dataset_path = os.path.join(PROJECT_ROOT, "Heart_Disease_Cleaned.csv")
+model_dir = os.path.join(PROJECT_ROOT, "models")
+os.makedirs(model_dir, exist_ok=True)
+
 # ============================================================
 # LOAD DATASET
 # ============================================================
 
 print("\nLoading dataset...")
 
-df = pd.read_csv("Heart_Disease_Cleaned.csv")
+df = pd.read_csv(dataset_path)
 
 print("Dataset loaded successfully!\n")
 
@@ -172,19 +177,16 @@ for name, metrics in results.items():
 # SAVE MODEL FILES
 # ============================================================
 
-if not os.path.exists("models"):
-    os.makedirs("models")
-
 # Save model
-joblib.dump(best_model, "models/best_model.pkl")
+joblib.dump(best_model, os.path.join(model_dir, "best_model.pkl"))
 
 # Save scaler
-joblib.dump(scaler, "models/scaler.pkl")
+joblib.dump(scaler, os.path.join(model_dir, "scaler.pkl"))
 
 # Save feature columns
-joblib.dump(list(X.columns), "models/feature_columns.pkl")
+joblib.dump(list(X.columns), os.path.join(model_dir, "feature_columns.pkl"))
 
-# Save model info (🔥 VERY IMPORTANT FOR DASHBOARD)
+# Save model info (VERY IMPORTANT FOR DASHBOARD)
 model_info = {
     "model_name": best_model_name,
     "accuracy": results[best_model_name]["test"],
@@ -216,7 +218,7 @@ if "Random Forest" in models:
 # Add to model_info
 model_info["feature_importance"] = feature_importance
 
-joblib.dump(model_info, "models/model_info.pkl")
+joblib.dump(model_info, os.path.join(model_dir, "model_info.pkl"))
 
 
 # ============================================================

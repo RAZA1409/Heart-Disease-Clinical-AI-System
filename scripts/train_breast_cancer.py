@@ -20,7 +20,12 @@ from sklearn.metrics import (
     balanced_accuracy_score, classification_report
 )
 
-def train_breast_cancer_model(output_dir="models"):
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_OUTPUT_DIR = os.path.join(PROJECT_ROOT, "models")
+
+def train_breast_cancer_model(output_dir=None, export_dataset=False):
+    if output_dir is None:
+        output_dir = DEFAULT_OUTPUT_DIR
     print("Loading official Wisconsin Diagnostic Breast Cancer (WDBC) dataset...")
     raw_data = load_breast_cancer()
 
@@ -32,10 +37,18 @@ def train_breast_cancer_model(output_dir="models"):
     feature_cols = [c.replace(' ', '_') for c in raw_data.feature_names]
     X = pd.DataFrame(raw_data.data, columns=feature_cols)
 
-    # Save local CSV for reference (excluded by .gitignore)
-    export_df = X.copy()
-    export_df['target'] = y
-    export_df.to_csv("breast_cancer.csv", index=False)
+    # Optional reference dataset export (opt-in only, never overwrites by default)
+    if export_dataset:
+        data_dir = os.path.join(PROJECT_ROOT, "data")
+        export_path = os.path.join(data_dir, "breast_cancer.csv") if os.path.exists(data_dir) else os.path.join(PROJECT_ROOT, "breast_cancer.csv")
+        if not os.path.exists(export_path):
+            os.makedirs(os.path.dirname(export_path), exist_ok=True)
+            export_df = X.copy()
+            export_df['target'] = y
+            export_df.to_csv(export_path, index=False)
+            print(f"Exported reference dataset to {export_path}")
+        else:
+            print(f"Reference dataset already exists at {export_path}; preserving existing file.")
 
     print(f"Dataset Shape: {X.shape[0]} records, {X.shape[1]} diagnostic numerical features")
     print(f"Missing Values: {X.isnull().sum().sum()}")
