@@ -9,20 +9,114 @@ Verifies all Phase 8B requirements:
 6. Unapproved Styling & Glow Cleanliness (No magenta glow, approved palette).
 """
 
+import os
+import shutil
+import tempfile
 import unittest
 import re
 from unittest.mock import patch, MagicMock
+from werkzeug.security import generate_password_hash
 from app import app
-from database import get_db_connection
+from database import get_db_connection, init_db
 
 
 class Phase8BDashboardUITests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        app.config["TESTING"] = True
-        app.config["WTF_CSRF_ENABLED"] = False
-        cls.client = app.test_client()
+        cls.orig_testing = app.config.get("TESTING")
+        cls.orig_csrf = app.config.get("WTF_CSRF_ENABLED")
+        cls.orig_db_path = os.environ.get("DATABASE_PATH")
+        cls.temp_dir = None
+
+        try:
+            app.config["TESTING"] = True
+            app.config["WTF_CSRF_ENABLED"] = False
+
+            # Create isolated temporary directory & SQLite database
+            cls.temp_dir = tempfile.mkdtemp(prefix="phase8b_isolated_test_")
+            cls.test_db = os.path.join(cls.temp_dir, "test_phase8b.db")
+            os.environ["DATABASE_PATH"] = cls.test_db
+
+            # Initialize complete application schema in the isolated database
+            init_db()
+
+            # Seed disposable synthetic patient fixture & test admin user
+            conn = get_db_connection()
+            try:
+                # Seed test admin
+                conn.execute("DELETE FROM users")
+                conn.execute(
+                    "INSERT INTO users (username, password) VALUES (?, ?)",
+                    ("admin", generate_password_hash("Admin@1234"))
+                )
+
+                # Seed 1 synthetic patient for each module
+                conn.execute("""
+                    INSERT INTO patients (
+                        patient_id, patient_name, age, sex, cp, trestbps, chol, fbs,
+                        restecg, thalach, exang, oldpeak, slope, ca, thal, result,
+                        probability, risk_level, timestamp
+                    ) VALUES (
+                        'PID2026040101', 'Synthetic Heart Patient', 55, 1, 1, 130, 240, 0,
+                        1, 150, 0, 1.2, 2, 0, 3, 'Present', 75.0, 'HIGH', '2026-04-01 10:00:00'
+                    )
+                """)
+                conn.execute("""
+                    INSERT INTO diabetes_patients (
+                        patient_id, patient_name, age, pregnancies, glucose,
+                        blood_pressure, skin_thickness, insulin, bmi, dpf,
+                        result, probability, risk_level, timestamp
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    'DPID2026040101', 'Synthetic Diabetes Patient', 45, 2, 145.0,
+                    80.0, 25.0, 100.0, 29.5, 0.55, "Present", 65.0, "MODERATE", "2026-04-01 11:00:00"
+                ))
+
+                conn.execute("""
+                    INSERT INTO breast_cancer_patients (
+                        patient_id, patient_name, age, mean_radius, mean_texture,
+                        mean_perimeter, mean_area, mean_smoothness, mean_compactness,
+                        mean_concavity, mean_concave_points, mean_symmetry,
+                        mean_fractal_dimension, radius_error, texture_error,
+                        perimeter_error, area_error, smoothness_error, compactness_error,
+                        concavity_error, concave_points_error, symmetry_error,
+                        fractal_dimension_error, worst_radius, worst_texture,
+                        worst_perimeter, worst_area, worst_smoothness, worst_compactness,
+                        worst_concavity, worst_concave_points, worst_symmetry,
+                        worst_fractal_dimension, result, probability, risk_level, timestamp
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    'BPID2026040101', 'Synthetic Cancer Patient', 50, 12.0, 18.0,
+                    80.0, 480.0, 0.08, 0.09, 0.05, 0.03, 0.16,
+                    0.05, 0.3, 0.9, 2.1, 25.0, 0.005, 0.015,
+                    0.02, 0.01, 0.015, 0.003, 14.0, 22.0,
+                    95.0, 620.0, 0.11, 0.20, 0.15, 0.08, 0.25,
+                    0.07, "Malignant", 85.0, "HIGH", "2026-04-01 12:00:00"
+                ))
+                conn.commit()
+            finally:
+                conn.close()
+
+            cls.client = app.test_client()
+        except Exception:
+            cls.tearDownClass()
+            raise
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls.orig_testing is not None:
+            app.config["TESTING"] = cls.orig_testing
+        if cls.orig_csrf is not None:
+            app.config["WTF_CSRF_ENABLED"] = cls.orig_csrf
+
+        if cls.orig_db_path is not None:
+            os.environ["DATABASE_PATH"] = cls.orig_db_path
+        elif "DATABASE_PATH" in os.environ:
+            del os.environ["DATABASE_PATH"]
+
+        if cls.temp_dir and os.path.exists(cls.temp_dir):
+            shutil.rmtree(cls.temp_dir, ignore_errors=True)
 
     def get_auth_client(self):
         client = app.test_client()
