@@ -1,152 +1,484 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Clinical Assessment Result</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Disease Assessment Result | Clinical AI Platform</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0b1329;
+            color: #f8fafc;
+            min-height: 100vh;
+            line-height: 1.5;
+            padding: 40px 20px;
+        }
+
+        .result-container {
+            max-width: 920px;
+            margin: 0 auto;
+        }
+
+        /* CARD WRAPPER */
         .result-card {
-            margin-top: 20px;
-        }
-
-        .result-info p {
-            margin: 8px 0;
-            font-size: 16px;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 6px 14px;
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
             border-radius: 20px;
+            padding: 36px 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+            margin-bottom: 24px;
+        }
+
+        /* HEADER */
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            margin-bottom: 24px;
+        }
+
+        .title-group h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #f8fafc;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title-group p {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        /* RISK BADGES */
+        .risk-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 16px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .risk-badge-low {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .risk-badge-moderate {
+            background: rgba(245, 158, 11, 0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .risk-badge-high {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        /* PATIENT METADATA BAR */
+        .patient-meta-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .meta-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+        }
+
+        .meta-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #f8fafc;
+        }
+
+        .meta-value-mono {
+            font-family: ui-monospace, SFMono-Regular, monospace;
+            color: #38bdf8;
+            font-size: 13px;
+        }
+
+        /* DISCLAIMER BANNER */
+        .disclaimer-banner {
+            background: rgba(37, 99, 235, 0.08);
+            border-left: 4px solid #2563eb;
+            border-radius: 0 8px 8px 0;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #94a3b8;
+        }
+
+        .disclaimer-banner strong {
+            color: #93c5fd;
+        }
+
+        /* METRICS GRID */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .metric-card {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 14px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .metric-title {
+            font-size: 12px;
+            color: #94a3b8;
             font-weight: 500;
-            color: white;
-            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .metric-number {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .metric-status-text {
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* PROGRESS CONTAINER */
+        .progress-box {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 13px;
+            font-weight: 600;
         }
 
         .progress-container {
-            margin-top: 15px;
-            background: #e0e0e0;
-            border-radius: 10px;
+            background: rgba(148, 163, 184, 0.12);
+            border-radius: 9999px;
             overflow: hidden;
-            height: 22px;
+            height: 14px;
+            position: relative;
         }
 
         .progress-bar {
             height: 100%;
-            text-align: right;
-            padding-right: 10px;
-            color: white;
-            font-size: 12px;
-            line-height: 22px;
-            font-weight: 500;
+            border-radius: 9999px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        .bar-low {
+            background: linear-gradient(90deg, #10b981, #059669);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+        }
+
+        .bar-moderate {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+        }
+
+        .bar-high {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+        }
+
+        /* RECOMMENDATION BOX */
         .recommendation-box {
-            margin-top: 25px;
-            padding: 15px;
-            border-radius: 8px;
-            background: #f4f6f8;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 14px;
+            padding: 22px;
+            margin-bottom: 28px;
         }
 
-        .action-buttons {
-            margin-top: 30px;
+        .recommendation-box h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #f8fafc;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .action-buttons a {
-            margin-right: 15px;
+        .recommendation-text {
+            font-size: 13.5px;
+            line-height: 1.6;
+            color: #cbd5e1;
+        }
+
+        /* ACTION BUTTONS */
+        .actions-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 20px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: rgba(148, 163, 184, 0.35);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        /* FOOTER */
+        .result-footer {
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 24px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 14px;
+            }
+
+            .result-card {
+                padding: 24px 20px;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .actions-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
-
 <body>
 
-<div class="container result-card">
+<div class="result-container">
 
-    <h1 style="color:#2c5364;">🫀 AI Clinical Assessment Result</h1>
+    <div class="result-card">
 
-    <div class="result-info">
+        <!-- HEADER -->
+        <div class="result-header">
+            <div class="title-group">
+                <h1>&#x1FAD0; AI Clinical Assessment Result</h1>
+                <p>Heart Disease Clinical Assessment Result &bull; Decision Support</p>
+            </div>
 
-        <p><strong>Patient Name:</strong> {{ patient_name }}</p>
-        <p><strong>Patient ID:</strong> {{ patient_id }}</p>
-
-        <p><strong>Diagnosis Prediction:</strong>
-            {% if prediction == "Present" %}
-                Cardiovascular Disease Detected
-            {% else %}
-                No Cardiovascular Disease Detected
-            {% endif %}
-        </p>
-
-        <p><strong>Risk Level:</strong>
-            {% if risk_level == "LOW" %}
-                <span class="badge" style="background:green;">LOW</span>
-            {% elif risk_level == "MODERATE" %}
-                <span class="badge" style="background:orange;">MODERATE</span>
-            {% else %}
-                <span class="badge" style="background:red;">HIGH</span>
-            {% endif %}
-        </p>
-
-        <p><strong>Risk Probability:</strong> {{ probability }}%</p>
-
-        <!-- Progress Bar -->
-        <div class="progress-container">
-            {% if risk_level == "LOW" %}
-                <div class="progress-bar"
-                     style="width: {{ probability }}%; background: #2e7d32;">
-                    {{ probability }}%
-                </div>
-            {% elif risk_level == "MODERATE" %}
-                <div class="progress-bar"
-                     style="width: {{ probability }}%; background: #ef6c00;">
-                    {{ probability }}%
-                </div>
-            {% else %}
-                <div class="progress-bar"
-                     style="width: {{ probability }}%; background: #c62828;">
-                    {{ probability }}%
-                </div>
-            {% endif %}
+            <div class="header-badge">
+                {% if risk_level == 'LOW' %}
+                    <span class="risk-badge risk-badge-low">&#x25CF; Low Risk</span>
+                {% elif risk_level == 'MODERATE' %}
+                    <span class="risk-badge risk-badge-moderate">&#x25CF; Moderate Risk</span>
+                {% else %}
+                    <span class="risk-badge risk-badge-high">&#x25CF; High Risk</span>
+                {% endif %}
+            </div>
         </div>
 
-        <!-- AI Recommendation -->
+        <!-- CLINICAL DISCLAIMER -->
+        <div class="disclaimer-banner">
+            &#x2695;&#xFE0F; <strong>Clinical Decision Support Estimate:</strong> This assessment provides statistical cardiovascular risk estimation based on machine learning modeling for clinical decision support and education. Model probability scores and risk tiers (LOW / MODERATE / HIGH) are computational estimates, <strong>not</strong> confirmed medical diagnoses. Formal medical evaluation requires physician assessment and standardized diagnostic testing.
+        </div>
+
+        <!-- PATIENT METADATA BAR -->
+        <div class="patient-meta-bar">
+            <div class="meta-item">
+                <span class="meta-label">Patient Name</span>
+                <span class="meta-value">{{ patient_name | format_patient_name }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Patient ID</span>
+                <span class="meta-value meta-value-mono">{{ patient_id }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Assessment Timestamp</span>
+                <span class="meta-value" style="font-size:13px; color:#cbd5e1;">{{ timestamp or '2026-11-14 10:00:00' }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Assessment Domain</span>
+                <span class="meta-value" style="color:#60a5fa;">Cardiovascular AI</span>
+            </div>
+        </div>
+
+        <!-- RISK OVERVIEW METRICS -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <span class="metric-title">Statistical Risk Tier</span>
+                <div class="metric-number" style="color:{% if risk_level == 'HIGH' %}#ef4444{% elif risk_level == 'MODERATE' %}#f59e0b{% else %}#10b981{% endif %};">
+                    {{ risk_level }}
+                </div>
+                <span class="metric-status-text" style="color:#94a3b8;">Risk Level: {{ risk_level }}</span>
+            </div>
+
+            <div class="metric-card">
+                <span class="metric-title">Calculated Probability</span>
+                <div class="metric-number" style="color:{% if risk_level == 'HIGH' %}#ef4444{% elif risk_level == 'MODERATE' %}#f59e0b{% else %}#10b981{% endif %};">
+                    {{ probability }}%
+                </div>
+                <span class="metric-status-text" style="color:#94a3b8;">Model Output Confidence</span>
+            </div>
+
+            <div class="metric-card">
+                <span class="metric-title">Statistical Assessment:</span>
+                <div class="metric-number" style="font-size:22px; color:{% if prediction == 'Present' %}#ef4444{% else %}#10b981{% endif %};">
+                    {% if prediction == "Present" %}
+                        Indicated (Present)
+                    {% else %}
+                        No Evidence (Absent)
+                    {% endif %}
+                </div>
+                <span class="metric-status-text" style="color:#94a3b8;">
+                    {% if prediction == "Present" %}
+                        Cardiovascular Disease Detected
+                    {% else %}
+                        No Cardiovascular Disease Detected
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+
+        <!-- PROGRESS GAUGE / RISK TRAJECTORY -->
+        <div class="progress-box">
+            <div class="progress-header">
+                <span>Cardiovascular Risk Spectrum</span>
+                <span style="color:{% if risk_level == 'HIGH' %}#ef4444{% elif risk_level == 'MODERATE' %}#f59e0b{% else %}#10b981{% endif %}; font-weight:700;">
+                    {{ probability }}%
+                </span>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar {% if risk_level == 'HIGH' %}bar-high{% elif risk_level == 'MODERATE' %}bar-moderate{% else %}bar-low{% endif %}"
+                     style="width: {{ probability }}%;"></div>
+            </div>
+        </div>
+
+        <!-- CLINICAL RECOMMENDATION -->
         <div class="recommendation-box">
-            <h3 style="color:#2c5364;">AI Clinical Recommendation</h3>
+            <h3>&#x1F9E0; AI Clinical Recommendation</h3>
+            <div class="recommendation-text">
+                {% if risk_level == "HIGH" %}
+                    <p style="color:#fca5a5;">
+                        &#x26A0;&#xFE0F; <strong>High cardiovascular risk detected.</strong> Immediate cardiology consultation, complete diagnostic workup (echocardiogram, cardiac biomarkers, angiography), and close hemodynamic monitoring recommended.
+                    </p>
+                {% elif risk_level == "MODERATE" %}
+                    <p style="color:#fcd34d;">
+                        &#x26A0;&#xFE0F; <strong>Moderate risk detected (elevated cardiac indicators).</strong> Recommend lifestyle modification, dietary sodium and lipid management, regular aerobic conditioning (150 min/week), and repeat clinical evaluation within 3–6 months.
+                    </p>
+                {% else %}
+                    <p style="color:#86efac;">
+                        &#x2713; <strong>Low immediate cardiovascular risk.</strong> Maintain heart-healthy dietary habits, regular physical activity, and standard preventive cardiovascular health surveillance.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
 
-            {% if risk_level == "HIGH" %}
-                <p style="color:#c62828;">
-                    ⚠ High cardiovascular risk detected.
-                    Immediate cardiology consultation and further diagnostic testing recommended.
-                </p>
-
-            {% elif risk_level == "MODERATE" %}
-                <p style="color:#ef6c00;">
-                    ⚠ Moderate risk detected.
-                    Lifestyle modification, diet control, and regular monitoring advised.
-                </p>
-
-            {% else %}
-                <p style="color:#2e7d32;">
-                    ✓ Low immediate cardiovascular risk.
-                    Maintain healthy lifestyle and routine check-ups.
-                </p>
-            {% endif %}
+        <!-- NAVIGATION ACTIONS -->
+        <div class="actions-group">
+            <a href="{{ url_for('predict_page') }}" class="btn btn-primary">&#x2795; New Assessment</a>
+            <a href="{{ url_for('patient_detail', patient_id=patient_id) }}" class="btn btn-secondary">&#x1F9FE; View Detailed Report</a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">&#x1F4CA; Dashboard</a>
+            <a href="{{ url_for('history') }}" class="btn btn-secondary">&#x1F4C1; History</a>
         </div>
 
     </div>
 
-    <div class="action-buttons">
-        <a href="{{ url_for('home') }}" class="button-primary">➕ New Assessment</a>
-        <a href="{{ url_for('dashboard') }}" class="button-primary">📊 Dashboard</a>
-        <a href="{{ url_for('history') }}" class="button-primary">📁 History</a>
+    <div class="result-footer">
+        &copy; 2026 Multi-Disease Clinical AI Platform &bull; Heart Disease Clinical Intelligence
     </div>
 
-</div>
-
-<div class="footer">
-    © 2026 Heart Disease Clinical AI System | Developed by Mohammed Raza
 </div>
 
 </body>

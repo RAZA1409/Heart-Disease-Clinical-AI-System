@@ -1,135 +1,685 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Heart Disease Clinical Assessment</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Disease Clinical Assessment | Clinical AI Platform</title>
+
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0b1329;
+            color: #f8fafc;
+            min-height: 100vh;
+            line-height: 1.5;
+            padding: 24px 16px;
+            overflow-x: hidden;
+        }
+
+        .assessment-wrapper {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* =========================================================
+           TOP NAVIGATION BAR
+           ========================================================= */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 16px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            font-size: 26px;
+            background: rgba(37, 99, 235, 0.15);
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            border: 1px solid rgba(37, 99, 235, 0.3);
+        }
+
+        .brand-titles h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #f8fafc;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-titles p {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-nav {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-nav-muted {
+            background: rgba(148, 163, 184, 0.12);
+            color: #f8fafc;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .btn-nav-muted:hover {
+            background: rgba(148, 163, 184, 0.2);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        /* =========================================================
+           CLINICAL PROTOCOL DISCLAIMER BANNER
+           ========================================================= */
+        .protocol-banner {
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid rgba(37, 99, 235, 0.25);
+            border-left: 4px solid #2563eb;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.6;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .protocol-banner-icon {
+            font-size: 18px;
+            line-height: 1;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .protocol-banner-text strong {
+            color: #f8fafc;
+        }
+
+        /* =========================================================
+           ERROR ALERT
+           ========================================================= */
+        .alert-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-left: 4px solid #ef4444;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            color: #fca5a5;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* =========================================================
+           FORM CARDS & CLINICAL GROUPINGS
+           ========================================================= */
+        .form-card {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: border-color 0.2s ease;
+        }
+
+        .form-card:hover {
+            border-color: rgba(37, 99, 235, 0.35);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .card-header-icon {
+            font-size: 18px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(37, 99, 235, 0.15);
+            border-radius: 8px;
+            color: #38bdf8;
+        }
+
+        .card-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #f8fafc;
+            letter-spacing: -0.01em;
+        }
+
+        .card-header p {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-left: auto;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px 24px;
+        }
+
+        /* =========================================================
+           FORM CONTROLS & LABELS
+           ========================================================= */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .label-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #e2e8f0;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .req-star {
+            color: #ef4444;
+            font-size: 12px;
+        }
+
+        .unit-badge {
+            font-size: 11px;
+            font-weight: 500;
+            color: #94a3b8;
+            background: rgba(148, 163, 184, 0.12);
+            padding: 2px 7px;
+            border-radius: 6px;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+        }
+
+        .field-hint {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            outline: none;
+            background: #0f172a;
+            color: #f8fafc;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+            background: #0f172a;
+        }
+
+        input::placeholder {
+            color: #64748b;
+        }
+
+        select {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 16px;
+            padding-right: 40px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        select option {
+            background-color: #0f172a;
+            color: #f8fafc;
+            padding: 8px;
+        }
+
+        /* =========================================================
+           ACTION BUTTONS SECTION
+           ========================================================= */
+        .actions-card {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .actions-info {
+            font-size: 12px;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .actions-buttons {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-reset {
+            padding: 12px 20px;
+            border-radius: 10px;
+            background: rgba(148, 163, 184, 0.12);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            font-size: 14px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-reset:hover {
+            background: rgba(148, 163, 184, 0.2);
+            color: #f8fafc;
+        }
+
+        .btn-submit {
+            padding: 12px 28px;
+            border-radius: 10px;
+            background: #2563eb;
+            color: #ffffff;
+            border: 1px solid #2563eb;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-submit:hover {
+            background: #1d4ed8;
+            border-color: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+        }
+
+        /* =========================================================
+           FOOTER
+           ========================================================= */
+        .footer {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+            padding: 16px 0;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        /* =========================================================
+           RESPONSIVE TWEAKS (No Horizontal Overflow)
+           ========================================================= */
+        @media (max-width: 768px) {
+            body {
+                padding: 16px 12px;
+            }
+
+            .top-nav {
+                padding: 14px 16px;
+            }
+
+            .form-card {
+                padding: 18px 16px;
+            }
+
+            .card-header p {
+                display: none;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .actions-card {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .actions-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn-submit, .btn-reset {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="assessment-wrapper">
 
-    <h1 style="color:#315c6e;">🫀 Heart Disease Clinical Assessment</h1>
+    <!-- TOP NAVIGATION BAR -->
+    <header class="top-nav">
+        <div class="brand-section">
+            <div class="brand-icon">&#x1FAC0;</div>
+            <div class="brand-titles">
+                <h1>Cardiovascular Clinical Assessment</h1>
+                <p>Standardized 13-Parameter Diagnostic Screening &bull; Logistic Regression</p>
+            </div>
+        </div>
+        <div class="nav-actions">
+            <a href="{{ url_for('dashboard') }}" class="btn-nav btn-nav-muted">&larr; Back to Dashboard</a>
+            <a href="{{ url_for('history') }}" class="btn-nav btn-nav-muted">&#x1F4C1; Patient History</a>
+            <a href="{{ url_for('heart_analytics') }}" class="btn-nav btn-nav-muted">&#x1F4CA; Analytics</a>
+        </div>
+    </header>
 
+    <!-- CLINICAL PROTOCOL BANNER -->
+    <div class="protocol-banner">
+        <span class="protocol-banner-icon">&#x2139;&#xFE0F;</span>
+        <div class="protocol-banner-text">
+            <strong>Clinical Decision Support Protocol — Statlog/Cleveland Schema:</strong> Enter verified patient physiological biomarkers and stress test readings to evaluate coronary artery disease probability. All 13 clinical parameters are evaluated through standard logistic regression probability estimation. This academic decision-support project is not a substitute for professional medical diagnosis.
+        </div>
+    </div>
+
+    <!-- ERROR ALERT (IF RETURNED FROM BACKEND) -->
+    {% if error %}
+    <div class="alert-error">
+        <span>&#x26A0;&#xFE0F;</span>
+        <div>{{ error }}</div>
+    </div>
+    {% endif %}
+
+    <!-- ASSESSMENT FORM -->
     <form method="POST" action="/predict">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-        <h3 style="margin-top:25px;">Patient Information</h3>
-
-        <div class="form-grid">
-
-            <div class="form-group">
-                <label>Patient Name</label>
-                <input type="text" name="patient_name" required>
+        <!-- SECTION 1: PATIENT DEMOGRAPHICS -->
+        <div class="form-card">
+            <div class="card-header">
+                <div class="card-header-icon">&#x1F464;</div>
+                <h2>Patient Demographics &amp; Identification</h2>
+                <p>Primary clinical identification</p>
             </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="patient_name">Patient Name <span class="req-star">*</span></label>
+                    </div>
+                    <input type="text" id="patient_name" name="patient_name" placeholder="Full name (e.g. Eleanor Vance)" required>
+                    <div class="field-hint">Full legal or clinical identification reference</div>
+                </div>
 
-            <div class="form-group">
-                <label>Age</label>
-                <input type="number" name="age" required>
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="age">Patient Age <span class="req-star">*</span></label>
+                        <span class="unit-badge">Years (1–120)</span>
+                    </div>
+                    <input type="number" id="age" name="age" min="1" max="120" placeholder="e.g. 58" required>
+                    <div class="field-hint">Chronological age at evaluation</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="sex">Biological Sex <span class="req-star">*</span></label>
+                        <span class="unit-badge">Categorical</span>
+                    </div>
+                    <select id="sex" name="sex" required>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                    <div class="field-hint">Phenotypic baseline risk stratification</div>
+                </div>
             </div>
-
-            <div class="form-group">
-                <label>Sex</label>
-                <select name="sex">
-                    <option>Male</option>
-                    <option>Female</option>
-                </select>
-            </div>
-
         </div>
 
-        <h3 style="margin-top:30px;">Clinical Parameters</h3>
-
-        <div class="form-grid">
-
-            <div class="form-group">
-                <label>Chest Pain Type</label>
-                <select name="cp">
-                    <option>Typical Angina</option>
-                    <option>Atypical Angina</option>
-                    <option>Non-Anginal Pain</option>
-                    <option>Asymptomatic</option>
-                </select>
+        <!-- SECTION 2: RESTING VITALS & METABOLIC BASELINE -->
+        <div class="form-card">
+            <div class="card-header">
+                <div class="card-header-icon">&#x1FA7A;</div>
+                <h2>Resting Hemodynamics &amp; Metabolic Baseline</h2>
+                <p>Baseline physiological parameters</p>
             </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="trestbps">Resting Blood Pressure <span class="req-star">*</span></label>
+                        <span class="unit-badge">mm Hg (50–300)</span>
+                    </div>
+                    <input type="number" id="trestbps" name="trestbps" min="50" max="300" placeholder="e.g. 130" required>
+                    <div class="field-hint">Systolic blood pressure upon admission</div>
+                </div>
 
-            <div class="form-group">
-                <label>Resting Blood Pressure</label>
-                <input type="number" name="trestbps" required>
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="chol">Serum Cholesterol <span class="req-star">*</span></label>
+                        <span class="unit-badge">mg/dL (50–700)</span>
+                    </div>
+                    <input type="number" id="chol" name="chol" min="50" max="700" placeholder="e.g. 240" required>
+                    <div class="field-hint">Total serum cholesterol concentration</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="fbs">Fasting Blood Sugar &gt; 120 mg/dL <span class="req-star">*</span></label>
+                        <span class="unit-badge">Glycemic</span>
+                    </div>
+                    <select id="fbs" name="fbs" required>
+                        <option value="No">No</option>
+                        <option value="Yes">Yes</option>
+                    </select>
+                    <div class="field-hint">Indicates diabetic or impaired glycemic status</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="restecg">Resting ECG Results <span class="req-star">*</span></label>
+                        <span class="unit-badge">12-Lead ECG</span>
+                    </div>
+                    <select id="restecg" name="restecg" required>
+                        <option value="Normal">Normal</option>
+                        <option value="ST-T Abnormality">ST-T Abnormality</option>
+                        <option value="Left Ventricular Hypertrophy">Left Ventricular Hypertrophy</option>
+                    </select>
+                    <div class="field-hint">Resting electrocardiographic baseline findings</div>
+                </div>
             </div>
-
-            <div class="form-group">
-                <label>Serum Cholesterol</label>
-                <input type="number" name="chol" required>
-            </div>
-
-            <div class="form-group">
-                <label>Fasting Blood Sugar > 120 mg/dl</label>
-                <select name="fbs">
-                    <option>Yes</option>
-                    <option>No</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Resting ECG Results</label>
-                <select name="restecg">
-                    <option>Normal</option>
-                    <option>ST-T Abnormality</option>
-                    <option>Left Ventricular Hypertrophy</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Maximum Heart Rate Achieved</label>
-                <input type="number" name="thalach" required>
-            </div>
-
-            <div class="form-group">
-                <label>Exercise Induced Angina</label>
-                <select name="exang">
-                    <option>Yes</option>
-                    <option>No</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>ST Depression</label>
-                <input type="number" step="any" name="oldpeak" required>
-            </div>
-
-            <div class="form-group">
-                <label>Slope of Peak Exercise ST</label>
-                <select name="slope">
-                    <option>Upsloping</option>
-                    <option>Flat</option>
-                    <option>Downsloping</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>Number of Major Vessels</label>
-                <input type="number" name="ca" required>
-            </div>
-
-            <div class="form-group">
-                <label>Thalassemia</label>
-                <select name="thal">
-                    <option>Normal</option>
-                    <option>Fixed Defect</option>
-                    <option>Reversible Defect</option>
-                </select>
-            </div>
-
         </div>
 
-        <button type="submit" class="submit-btn">Analyze Patient</button>
+        <!-- SECTION 3: EXERCISE STRESS TESTING & DYNAMIC ECG -->
+        <div class="form-card">
+            <div class="card-header">
+                <div class="card-header-icon">&#x1F3C3;</div>
+                <h2>Exercise Stress Testing &amp; Functional ECG</h2>
+                <p>Treadmill exercise protocol measurements</p>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="thalach">Maximum Heart Rate Achieved <span class="req-star">*</span></label>
+                        <span class="unit-badge">bpm (40–250)</span>
+                    </div>
+                    <input type="number" id="thalach" name="thalach" min="40" max="250" placeholder="e.g. 150" required>
+                    <div class="field-hint">Peak chronotropic capacity during exertion</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="exang">Exercise-Induced Angina <span class="req-star">*</span></label>
+                        <span class="unit-badge">Clinical</span>
+                    </div>
+                    <select id="exang" name="exang" required>
+                        <option value="No">No</option>
+                        <option value="Yes">Yes</option>
+                    </select>
+                    <div class="field-hint">Transient angina pectoris precipitated by stress</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="oldpeak">ST Depression (oldpeak) <span class="req-star">*</span></label>
+                        <span class="unit-badge">mm (0.0–10.0)</span>
+                    </div>
+                    <input type="number" step="0.1" id="oldpeak" name="oldpeak" min="0" max="10" placeholder="e.g. 1.0" required>
+                    <div class="field-hint">Exercise-induced ST depression relative to rest</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="slope">Slope of Peak Exercise ST <span class="req-star">*</span></label>
+                        <span class="unit-badge">ST Slope</span>
+                    </div>
+                    <select id="slope" name="slope" required>
+                        <option value="Upsloping">Upsloping</option>
+                        <option value="Flat">Flat</option>
+                        <option value="Downsloping">Downsloping</option>
+                    </select>
+                    <div class="field-hint">Morphology of ST segment at maximal effort</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 4: SYMPTOMATOLOGY & DIAGNOSTIC IMAGING -->
+        <div class="form-card">
+            <div class="card-header">
+                <div class="card-header-icon">&#x1F52C;</div>
+                <h2>Symptomatology &amp; Diagnostic Imaging</h2>
+                <p>Clinical presentation &amp; nuclear imaging</p>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="cp">Chest Pain Classification <span class="req-star">*</span></label>
+                        <span class="unit-badge">Anginal Tier</span>
+                    </div>
+                    <select id="cp" name="cp" required>
+                        <option value="Typical Angina">Typical Angina</option>
+                        <option value="Atypical Angina">Atypical Angina</option>
+                        <option value="Non-Anginal Pain">Non-Anginal Pain</option>
+                        <option value="Asymptomatic">Asymptomatic</option>
+                    </select>
+                    <div class="field-hint">Symptom classification according to Diamond-Forrester criteria</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="ca">Major Vessels by Fluoroscopy <span class="req-star">*</span></label>
+                        <span class="unit-badge">Count (0–3)</span>
+                    </div>
+                    <input type="number" id="ca" name="ca" min="0" max="3" placeholder="0, 1, 2, or 3" required>
+                    <div class="field-hint">Number of coronary arteries with &ge;50% luminal narrowing</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="thal">Thallium Scintigraphy <span class="req-star">*</span></label>
+                        <span class="unit-badge">Nuclear</span>
+                    </div>
+                    <select id="thal" name="thal" required>
+                        <option value="Normal">Normal</option>
+                        <option value="Fixed Defect">Fixed Defect</option>
+                        <option value="Reversible Defect">Reversible Defect</option>
+                    </select>
+                    <div class="field-hint">Myocardial perfusion scintigraphy findings</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORM ACTIONS BAR -->
+        <div class="actions-card">
+            <div class="actions-info">
+                <span>&#x1F6E1;&#xFE0F;</span>
+                <span>All 13 clinical features are evaluated via logistic regression probability estimation.</span>
+            </div>
+            <div class="actions-buttons">
+                <button type="reset" class="btn-reset">&#x21BB; Clear Form</button>
+                <button type="submit" class="btn-submit">&#x1FAC0; Assess Cardiovascular Risk &rarr;</button>
+            </div>
+        </div>
 
     </form>
 
-</div>
+    <!-- FOOTER -->
+    <footer class="footer">
+        &copy; 2026 Multi-Disease Clinical AI Platform &bull; Cardiovascular Clinical Prediction Module
+    </footer>
 
-<div class="footer">
-    © 2026 Heart Disease Clinical AI System | Developed by Mohammed Raza
 </div>
 
 </body>

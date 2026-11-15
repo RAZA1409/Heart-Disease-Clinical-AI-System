@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diabetes Clinical Assessment | Clinical AI Platform</title>
+
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0b1329;
+            color: #f8fafc;
+            min-height: 100vh;
+            line-height: 1.5;
+            padding: 24px 16px;
+            overflow-x: hidden;
+        }
+
+        .assessment-wrapper {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* =========================================================
+           TOP NAVIGATION BAR
+           ========================================================= */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 16px;
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            font-size: 26px;
+            background: rgba(2, 132, 199, 0.15);
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            border: 1px solid rgba(2, 132, 199, 0.3);
+        }
+
+        .brand-titles h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #f8fafc;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-titles p {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-nav {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-nav-muted {
+            background: rgba(148, 163, 184, 0.12);
+            color: #f8fafc;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .btn-nav-muted:hover {
+            background: rgba(148, 163, 184, 0.2);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        /* =========================================================
+           CLINICAL PROTOCOL & DECISION SUPPORT BANNER
+           ========================================================= */
+        .protocol-banner {
+            background: rgba(2, 132, 199, 0.1);
+            border: 1px solid rgba(2, 132, 199, 0.25);
+            border-left: 4px solid #0284c7;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.6;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .protocol-banner-icon {
+            font-size: 18px;
+            line-height: 1;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+
+        .protocol-banner-text strong {
+            color: #f8fafc;
+        }
+
+        /* =========================================================
+           ERROR ALERT
+           ========================================================= */
+        .alert-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-left: 4px solid #ef4444;
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            color: #fca5a5;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* =========================================================
+           FORM CARDS & CLINICAL GROUPINGS
+           ========================================================= */
+        .form-card {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            transition: border-color 0.2s ease;
+        }
+
+        .form-card:hover {
+            border-color: rgba(2, 132, 199, 0.35);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .card-header-icon {
+            font-size: 18px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(2, 132, 199, 0.15);
+            border-radius: 8px;
+            color: #38bdf8;
+        }
+
+        .card-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #f8fafc;
+            letter-spacing: -0.01em;
+        }
+
+        .card-header p {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-left: auto;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px 24px;
+        }
+
+        /* =========================================================
+           FORM CONTROLS & LABELS
+           ========================================================= */
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .label-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #e2e8f0;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .req-star {
+            color: #ef4444;
+            font-size: 12px;
+        }
+
+        .unit-badge {
+            font-size: 11px;
+            font-weight: 500;
+            color: #94a3b8;
+            background: rgba(148, 163, 184, 0.12);
+            padding: 2px 7px;
+            border-radius: 6px;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+        }
+
+        .field-hint {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            outline: none;
+            background: #0f172a;
+            color: #f8fafc;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            border-color: #0284c7;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25);
+            background: #0f172a;
+        }
+
+        input::placeholder {
+            color: #64748b;
+        }
+
+        /* =========================================================
+           ACTION BUTTONS SECTION
+           ========================================================= */
+        .actions-card {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .actions-info {
+            font-size: 12px;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .actions-buttons {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-reset {
+            padding: 12px 20px;
+            border-radius: 10px;
+            background: rgba(148, 163, 184, 0.12);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            font-size: 14px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-reset:hover {
+            background: rgba(148, 163, 184, 0.2);
+            color: #f8fafc;
+        }
+
+        .btn-submit {
+            padding: 12px 28px;
+            border-radius: 10px;
+            background: #0284c7;
+            color: #ffffff;
+            border: 1px solid #0284c7;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-submit:hover {
+            background: #0369a1;
+            border-color: #0369a1;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45);
+        }
+
+        /* =========================================================
+           FOOTER
+           ========================================================= */
+        .footer {
+            margin-top: 32px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+            padding: 16px 0;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        /* =========================================================
+           RESPONSIVE TWEAKS (No Horizontal Overflow)
+           ========================================================= */
+        @media (max-width: 768px) {
+            body {
+                padding: 16px 12px;
+            }
+
+            .top-nav {
+                padding: 14px 16px;
+            }
+
+            .form-card {
+                padding: 18px 16px;
+            }
+
+            .card-header p {
+                display: none;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .actions-card {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .actions-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .btn-submit, .btn-reset {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="assessment-wrapper">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="top-nav">
+        <div class="brand-section">
+            <div class="brand-icon">&#x1FA78;</div>
+            <div class="brand-titles">
+                <h1>Diabetes Clinical AI Assessment</h1>
+                <p>Eight-Feature Diabetes Risk Assessment &bull; Random Forest Classifier</p>
+            </div>
+        </div>
+        <div class="nav-actions">
+            <a href="{{ url_for('dashboard') }}" class="btn-nav btn-nav-muted">&larr; Back to Dashboard</a>
+            <a href="{{ url_for('diabetes_history') }}" class="btn-nav btn-nav-muted">&#x1F4C1; Patient History</a>
+            <a href="{{ url_for('diabetes_analytics') }}" class="btn-nav btn-nav-muted">&#x1F4CA; Analytics</a>
+        </div>
+    </header>
+
+    <!-- CLINICAL PROTOCOL & DECISION SUPPORT BANNER -->
+    <div class="protocol-banner">
+        <span class="protocol-banner-icon">&#x2139;&#xFE0F;</span>
+        <div class="protocol-banner-text">
+            <strong>Clinical Decision Support Protocol — Pima Indians Diabetes Schema:</strong> Enter verified patient metabolic biomarkers and clinical measurements to evaluate diabetes mellitus risk. Evaluated through a balanced Random Forest ensemble classifier with standard median imputation. This academic decision-support project is intended for educational and risk-stratification research and is not a substitute for formal medical evaluation.
+        </div>
+    </div>
+
+    <!-- ERROR ALERT (IF RETURNED FROM BACKEND) -->
+    {% if error %}
+    <div class="alert-error">
+        <span>&#x26A0;&#xFE0F;</span>
+        <div>{{ error }}</div>
+    </div>
+    {% endif %}
+
+    <!-- ASSESSMENT FORM -->
+    <form method="POST" action="{{ url_for('diabetes_predict') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- SECTION 1: PATIENT DEMOGRAPHICS & MATERNAL HISTORY -->
+        <div class="form-card">
+            <div class="card-header">
+                <div class="card-header-icon">&#x1F464;</div>
+                <h2>Patient Demographics &amp; Obstetric Baseline</h2>
+                <p>Primary clinical identification &amp; obstetric history</p>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="patient_name">Patient Full Name <span class="req-star">*</span></label>
+                    </div>
+                    <input type="text" id="patient_name" name="patient_name" placeholder="Full name (e.g. Eleanor Vance)" required>
+                    <div class="field-hint">Legal or clinical record identification reference</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="age">Patient Age <span class="req-star">*</span></label>
+                        <span class="unit-badge">Years (1–120)</span>
+                    </div>
+                    <input type="number" id="age" name="age" min="1" max="120" placeholder="e.g. 45" required>
+                    <div class="field-hint">Chronological age in completed years</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="pregnancies">Number of Pregnancies <span class="req-star">*</span></label>
+                        <span class="unit-badge">Count (0–25)</span>
+                    </div>
+                    <input type="number" id="pregnancies" name="pregnancies" min="0" max="25" value="0" placeholder="0 if male or nulliparous" required>
+                    <div class="field-hint">Total lifetime pregnancies (enter 0 for male or nulliparous patients)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: GLYCEMIC & HEMODYNAMIC BIOMARKERS -->
+        <div class="form-card">
+            <div class="card-header">
+                <div class="card-header-icon">&#x1FA7A;</div>
+                <h2>Glycemic &amp; Hemodynamic Biomarkers</h2>
+                <p>Laboratory serum values &amp; vascular pressure</p>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="glucose">Plasma Glucose Concentration <span class="req-star">*</span></label>
+                        <span class="unit-badge">mg/dL (40–300)</span>
+                    </div>
+                    <input type="number" id="glucose" name="glucose" min="40" max="300" step="any" placeholder="e.g. 125" required>
+                    <div class="field-hint">2-hour oral glucose tolerance test (OGTT) concentration</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="blood_pressure">Diastolic Blood Pressure <span class="req-star">*</span></label>
+                        <span class="unit-badge">mm Hg (30–200)</span>
+                    </div>
+                    <input type="number" id="blood_pressure" name="blood_pressure" min="30" max="200" step="any" placeholder="e.g. 80" required>
+                    <div class="field-hint">Resting diastolic vascular pressure measurement</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="insulin">2-Hour Serum Insulin <span class="req-star">*</span></label>
+                        <span class="unit-badge">&mu;U/mL (0–900)</span>
+                    </div>
+                    <input type="number" id="insulin" name="insulin" min="0" max="900" step="any" placeholder="e.g. 85 (or 0 if unknown)" required>
+                    <div class="field-hint">Post-glucose serum insulin (enter 0 if unmeasured; median-imputed)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 3: ANTHROPOMETRIC & GENETIC RISK FACTORS -->
+        <div class="form-card">
+            <div class="card-header">
+                <div class="card-header-icon">&#x1F9EC;</div>
+                <h2>Anthropometric &amp; Genetic Risk Factors</h2>
+                <p>Physical body composition &amp; hereditary index</p>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="bmi">Body Mass Index (BMI) <span class="req-star">*</span></label>
+                        <span class="unit-badge">kg/m&sup2; (10–70)</span>
+                    </div>
+                    <input type="number" id="bmi" name="bmi" min="10" max="70" step="0.1" placeholder="e.g. 27.5" required>
+                    <div class="field-hint">Body mass index calculated as weight in kg / (height in m)&sup2;</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="skin_thickness">Triceps Skinfold Thickness <span class="req-star">*</span></label>
+                        <span class="unit-badge">mm (0–100)</span>
+                    </div>
+                    <input type="number" id="skin_thickness" name="skin_thickness" min="0" max="100" step="any" placeholder="e.g. 23 (or 0 if unknown)" required>
+                    <div class="field-hint">Triceps adipose thickness (enter 0 if unmeasured; median-imputed)</div>
+                </div>
+
+                <div class="form-group">
+                    <div class="label-wrapper">
+                        <label for="dpf">Diabetes Pedigree Function (DPF) <span class="req-star">*</span></label>
+                        <span class="unit-badge">Score (0.01–3.0)</span>
+                    </div>
+                    <input type="number" id="dpf" name="dpf" min="0.01" max="3.0" step="0.001" placeholder="e.g. 0.47" required>
+                    <div class="field-hint">Genetic scoring index based on family diabetes history</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORM ACTIONS BAR -->
+        <div class="actions-card">
+            <div class="actions-info">
+                <span>&#x1F6E1;&#xFE0F;</span>
+                <span>All eight clinical predictors are evaluated using the Random Forest model.</span>
+            </div>
+            <div class="actions-buttons">
+                <button type="reset" class="btn-reset">&#x21BB; Clear Form</button>
+                <button type="submit" class="btn-submit">&#x1FA78; Evaluate Metabolic Risk &rarr;</button>
+            </div>
+        </div>
+
+    </form>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        &copy; 2026 Multi-Disease Clinical AI Platform &bull; Diabetes Mellitus Prediction Module
+    </footer>
+
+</div>
+
+</body>
+</html>

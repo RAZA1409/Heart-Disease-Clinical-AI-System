@@ -1,6 +1,14 @@
 # ============================================================
-# TRAIN MODEL FILE
-# Genetic Algorithm vs Grid Search Optimization
+# EXPERIMENTAL MODEL OPTIMIZATION FILE
+# Genetic Algorithm vs Grid Search Hyperparameter Study
+#
+# NOTE: This is an offline research/experimentation script.
+# The authoritative Heart Disease production training script is:
+#     model_comparison.py
+#
+# This script saves its own separate experimental artifacts
+# (ga_model.pkl, ga_scaler.pkl, ga_feature_columns.pkl, ga_convergence.png)
+# and NEVER overwrites production artifacts (best_model.pkl, scaler.pkl).
 # ============================================================
 
 import pandas as pd
@@ -134,8 +142,10 @@ grid_test_accuracy = accuracy_score(y_test, grid_best.predict(X_test_scaled))
 print("Best Grid Parameters:", grid.best_params_)
 print("Grid Search Test Accuracy:", round(grid_test_accuracy * 100, 2), "%")
 
-
-
+comparison = {
+    "GA": ga_test_accuracy,
+    "Grid": grid_test_accuracy
+}
 
 joblib.dump(comparison, "models/optimization_comparison.pkl")
 # ============================================================
@@ -161,11 +171,13 @@ plt.savefig("models/ga_convergence.png")
 plt.close()
 
 # ============================================================
-# 6. SAVE BEST MODEL
+# 6. SAVE EXPERIMENTAL GA ARTIFACTS
+# (Saves to separate ga_* files to protect production artifacts)
 # ============================================================
 
 joblib.dump(ga_model, "models/ga_model.pkl")
-joblib.dump(scaler, "models/scaler.pkl")
-joblib.dump(X.columns.tolist(), "models/feature_columns.pkl")
+joblib.dump(scaler, "models/ga_scaler.pkl")
+joblib.dump(X.columns.tolist(), "models/ga_feature_columns.pkl")
 
-print("\nModel, Scaler, and Feature Columns Saved Successfully!")
+print("\nExperimental GA Model, Scaler, and Feature Columns Saved Successfully!")
+print("Production artifacts (best_model.pkl, scaler.pkl) remain protected.")

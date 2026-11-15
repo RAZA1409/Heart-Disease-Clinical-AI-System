@@ -8,6 +8,7 @@ import pandas as pd
 import joblib
 import os
 import datetime
+from risk_config import classify_risk
 
 # Load trained model and scaler
 model = joblib.load("models/best_model.pkl")
@@ -75,12 +76,7 @@ user_scaled = scaler.transform(user_data)
 probability = model.predict_proba(user_scaled)[0][1]
 prediction = 1 if probability >= 0.5 else 0
 
-if probability < 0.3:
-    risk_level = "LOW"
-elif probability < 0.7:
-    risk_level = "MODERATE"
-else:
-    risk_level = "HIGH"
+risk_level = classify_risk(probability * 100)
 
 print("\n==============================")
 print("PREDICTION RESULT")

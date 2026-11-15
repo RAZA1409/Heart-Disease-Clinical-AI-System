@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Breast Cancer Assessment Result | Multi-Disease Clinical AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body {
+            background: linear-gradient(135deg, #020617, #0f172a, #1e293b);
+            color: white;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 22px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        h1 {
+            font-size: 26px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+        .disclaimer-banner {
+            background: rgba(236, 72, 153, 0.1);
+            border-left: 4px solid #ec4899;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #cbd5e1;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        .result-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 15px;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        .info-value {
+            font-weight: 600;
+            color: #f8fafc;
+        }
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 13px;
+            color: white;
+        }
+        .badge-low { background: #16a34a; }
+        .badge-moderate { background: #f97316; }
+        .badge-high { background: #dc2626; }
+
+        .progress-container {
+            margin-top: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            height: 24px;
+        }
+        .progress-bar {
+            height: 100%;
+            text-align: right;
+            padding-right: 12px;
+            color: white;
+            font-size: 12px;
+            line-height: 24px;
+            font-weight: 600;
+            border-radius: 12px;
+            transition: width 1s ease-in-out;
+        }
+
+        .recommendation-box {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .recommendation-box h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #f472b6;
+            margin-bottom: 10px;
+        }
+        .recommendation-text {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+        .btn {
+            padding: 11px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            color: white;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.18);
+            transform: translateY(-2px);
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 12px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎗️ Breast Cancer Cytology AI Result</h1>
+
+    <div class="disclaimer-banner">
+        ⚕️ <strong>Decision Support Estimate:</strong> This assessment provides statistical malignancy probability derived from cell nuclear morphology. It is generated for educational and clinical decision-support purposes only and does <strong>not</strong> constitute an official medical diagnosis. Diagnostic confirmation requires histological tissue biopsy and licensed pathology examination.
+    </div>
+
+    <div class="result-card">
+        <div class="info-row">
+            <span class="info-label">Patient Full Name</span>
+            <span class="info-value">{{ patient_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Patient Identification</span>
+            <span class="info-value" style="font-family: monospace; color: #f472b6;">{{ patient_id }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Statistical Risk Tier (Decision Support)</span>
+            <span class="info-value">
+                {% if risk_level == "LOW" %}
+                    <span class="badge badge-low">LOW (ESTIMATE)</span>
+                {% elif risk_level == "MODERATE" %}
+                    <span class="badge badge-moderate">MODERATE (ESTIMATE)</span>
+                {% else %}
+                    <span class="badge badge-high">HIGH (ESTIMATE)</span>
+                {% endif %}
+            </span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Cytological Classification</span>
+            <span class="info-value">
+                {% if prediction == "Malignant" %}
+                    <span style="color: #f87171; font-weight: 700;">Malignancy Indicated (Malignant Profile)</span>
+                {% else %}
+                    <span style="color: #4ade80; font-weight: 700;">Benign Cytology Indicated (Benign Profile)</span>
+                {% endif %}
+            </span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Estimated Malignancy Probability</span>
+            <span class="info-value">{{ probability }}%</span>
+        </div>
+
+        <div class="progress-container">
+            {% if risk_level == "LOW" %}
+                <div class="progress-bar badge-low" style="width: {{ probability }}%;">
+                    {{ probability }}%
+                </div>
+            {% elif risk_level == "MODERATE" %}
+                <div class="progress-bar badge-moderate" style="width: {{ probability }}%;">
+                    {{ probability }}%
+                </div>
+            {% else %}
+                <div class="progress-bar badge-high" style="width: {{ probability }}%;">
+                    {{ probability }}%
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="recommendation-box">
+            <h3>AI Clinical Assessment & Guidance</h3>
+            <div class="recommendation-text">
+                {% if prediction == "Malignant" or risk_level == "HIGH" %}
+                    <p style="color: #fca5a5;">
+                        ⚠️ <strong>High cytological suspicion for malignancy.</strong> Immediate surgical oncology referral and core needle biopsy (CNB) are strongly indicated. Recommend diagnostic bilateral mammography, targeted breast ultrasonography, and formal staging workup.
+                    </p>
+                {% elif risk_level == "MODERATE" %}
+                    <p style="color: #fdba74;">
+                        ⚠️ <strong>Atypical cytological characteristics detected (Borderline/Intermediate Risk).</strong> Recommend histological tissue sampling (core biopsy) or short-interval follow-up imaging (BI-RADS 3/4 protocol) within 3 to 6 months.
+                    </p>
+                {% else %}
+                    <p style="color: #86efac;">
+                        ✓ <strong>Nuclear morphometry aligns with benign breast tissue.</strong> Findings suggest benign disease (e.g., fibroadenoma, simple cyst). Recommend standard annual screening mammography and clinical breast examination as per national clinical guidelines.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <a href="{{ url_for('breast_cancer_predict_page') }}" class="btn btn-primary">➕ New Assessment</a>
+        <a href="{{ url_for('breast_cancer_patient_detail', patient_id=patient_id) }}" class="btn btn-secondary">🧾 View Detailed Report</a>
+        <a href="{{ url_for('breast_cancer_history') }}" class="btn btn-secondary">📁 History</a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">📊 Dashboard</a>
+    </div>
+
+    <div class="footer">
+        © 2026 Multi-Disease Clinical AI Platform • Clinical Decision Support System
+    </div>
+</div>
+
+</body>
+</html>
