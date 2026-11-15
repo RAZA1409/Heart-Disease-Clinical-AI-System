@@ -181,7 +181,7 @@
             margin-bottom: 24px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
             display: grid;
-            grid-template-columns: 1.6fr 1fr;
+            grid-template-columns: 1.4fr 1fr;
             gap: 28px;
             align-items: center;
         }
@@ -275,39 +275,58 @@
 
         .hero-right {
             display: flex;
-            justify-content: center;
+            justify-content: flex-end;
             align-items: center;
         }
 
-        .donut-container {
-            position: relative;
-            width: 220px;
-            height: 220px;
+        .hero-summary-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 14px;
+            padding: 20px 24px;
+            width: 100%;
+            max-width: 360px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
         }
 
-        .chart-center {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            pointer-events: none;
-        }
-
-        .chart-value {
-            font-size: 28px;
-            font-weight: 800;
-            color: #f8fafc;
-            line-height: 1.1;
-        }
-
-        .chart-label {
-            font-size: 12px;
-            font-weight: 700;
+        .summary-stat-label {
+            font-size: 11px;
+            font-weight: 600;
             color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            margin-top: 4px;
+        }
+
+        .summary-risk-tier {
+            display: flex;
+            align-items: center;
+        }
+
+        .summary-metric-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .summary-metric {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .summary-metric-label {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .summary-metric-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #f8fafc;
         }
 
         /* =========================================================
@@ -404,7 +423,7 @@
            ========================================================= */
         .main-layout {
             display: grid;
-            grid-template-columns: 1.6fr 1fr;
+            grid-template-columns: repeat(2, 1fr);
             gap: 24px;
             margin-bottom: 24px;
         }
@@ -574,37 +593,97 @@
         }
 
         /* =========================================================
-           CHART CONTAINERS
+           ANALYTICAL CHARTS SECTION & GRID
            ========================================================= */
+        .charts-section {
+            margin-bottom: 24px;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
         .chart-box {
             background: #1e293b;
             border: 1px solid rgba(148, 163, 184, 0.15);
             padding: 24px;
             border-radius: 16px;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-            margin-bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            min-height: 380px;
         }
 
-        .chart-box h3 {
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        }
+
+        .chart-header h3 {
             font-size: 15px;
             font-weight: 600;
             color: #f8fafc;
-            margin-bottom: 16px;
+            margin: 0;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
+        .chart-header p {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 3px;
+        }
+
+        .chart-canvas-container,
+        .donut-container,
         .param-chart-wrapper {
             position: relative;
             width: 100%;
             height: 280px;
-            max-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
         }
 
+        .chart-canvas-container canvas,
+        .donut-container canvas,
         .param-chart-wrapper canvas {
             max-width: 100% !important;
             max-height: 100% !important;
+        }
+
+        .chart-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .chart-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: #f8fafc;
+            line-height: 1.1;
+        }
+
+        .chart-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 4px;
         }
 
         /* =========================================================
@@ -804,6 +883,13 @@
                 grid-template-columns: repeat(4, 1fr) !important;
             }
 
+            .charts-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 16px !important;
+            }
+
+            .chart-canvas-container,
+            .donut-container,
             .param-chart-wrapper {
                 height: 220px !important;
                 max-height: 220px !important;
@@ -822,13 +908,28 @@
                 grid-template-columns: 1fr;
             }
 
+            .hero-right {
+                justify-content: stretch;
+            }
+
+            .hero-summary-box {
+                max-width: 100%;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
             .main-layout {
                 grid-template-columns: 1fr;
             }
 
+            .chart-canvas-container,
+            .donut-container,
             .param-chart-wrapper {
-                height: 250px;
-                max-height: 260px;
+                height: 260px;
+                max-height: 270px;
             }
         }
 
@@ -857,13 +958,20 @@
                 grid-template-columns: 1fr;
             }
 
+            .charts-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
             .intelligence-grid {
                 grid-template-columns: 1fr;
             }
 
+            .chart-canvas-container,
+            .donut-container,
             .param-chart-wrapper {
-                height: 230px;
-                max-height: 240px;
+                height: 240px;
+                max-height: 250px;
             }
 
             .bottom-actions {
@@ -955,11 +1063,26 @@
         </div>
 
         <div class="hero-right">
-            <div class="donut-container">
-                <canvas id="riskChart"></canvas>
-                <div class="chart-center">
-                    <div class="chart-value">{{ patient['probability'] }}%</div>
-                    <div class="chart-label">{{ patient['risk_level'] }}</div>
+            <div class="hero-summary-box">
+                <div class="summary-stat-label">Assessment Status</div>
+                <div class="summary-risk-tier">
+                    {% if patient["risk_level"] == "LOW" %}
+                        <span class="badge low">&#x25CF; LOW RISK</span>
+                    {% elif patient["risk_level"] == "MODERATE" %}
+                        <span class="badge moderate">&#x25CF; MODERATE RISK</span>
+                    {% else %}
+                        <span class="badge high">&#x25CF; HIGH RISK</span>
+                    {% endif %}
+                </div>
+                <div class="summary-metric-row">
+                    <div class="summary-metric">
+                        <span class="summary-metric-label">Model Confidence</span>
+                        <span class="summary-metric-value">{{ patient['confidence'] }}%</span>
+                    </div>
+                    <div class="summary-metric">
+                        <span class="summary-metric-label">Prediction</span>
+                        <span class="summary-metric-value">{{ patient['result'] }}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -998,6 +1121,46 @@
             <h4>ST Depression (Oldpeak)</h4>
             <p>{{ patient['oldpeak'] }} <span style="font-size:14px; font-weight:400; color:#94a3b8;">mm</span></p>
             <span class="card-status-badge">Status: {{ patient.get('ST Depression Status', 'Normal') }}</span>
+        </div>
+    </div>
+
+    <!-- ANALYTICAL CHARTS GRID (2 Equal-Width Columns) -->
+    <div class="charts-section">
+        <div class="section-heading">
+            <span>&#x1F4CA;</span>
+            <span>Cardiovascular Analytics & Risk Assessment</span>
+        </div>
+
+        <div class="charts-grid">
+            <!-- RISK STRATIFICATION GAUGE CHART -->
+            <div class="chart-box">
+                <div class="chart-header">
+                    <div>
+                        <h3>&#x2764;&#xFE0F; Cardiovascular Risk Stratification</h3>
+                        <p>Computed Risk Probability & Classification</p>
+                    </div>
+                </div>
+                <div class="chart-canvas-container donut-container">
+                    <canvas id="riskChart"></canvas>
+                    <div class="chart-center">
+                        <div class="chart-value">{{ patient['probability'] }}%</div>
+                        <div class="chart-label">{{ patient['risk_level'] }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CLINICAL PARAMETER OVERVIEW BAR CHART -->
+            <div class="chart-box">
+                <div class="chart-header">
+                    <div>
+                        <h3>&#x1F4CA; Clinical Parameter Overview</h3>
+                        <p>Recorded Biomarkers vs Reference Values</p>
+                    </div>
+                </div>
+                <div class="chart-canvas-container param-chart-wrapper">
+                    <canvas id="featureChart"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1046,14 +1209,6 @@
                 {% else %}
                 <p class="alert-clean">&#x2705; No critical alerts detected.</p>
                 {% endif %}
-            </div>
-
-            <!-- PARAMETER OVERVIEW BAR CHART -->
-            <div class="chart-box">
-                <h3>&#x1F4CA; Clinical Parameter Overview</h3>
-                <div class="param-chart-wrapper">
-                    <canvas id="featureChart"></canvas>
-                </div>
             </div>
 
         </div>
@@ -1134,77 +1289,77 @@
                 </div>
             </div>
 
-            <!-- CLINICAL PARAMETER REFERENCE SUMMARY TABLE -->
-            <div class="table-panel">
-                <div class="panel-header">
-                    <h4>&#x1F9EC; Complete Feature Summary</h4>
-                    <span style="font-size:12px; color:#94a3b8;">13 Predictors</span>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="clinical-table">
-                        <thead>
-                            <tr>
-                                <th>Clinical Feature</th>
-                                <th>Recorded Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="param-name">Age / Sex</td>
-                                <td class="param-val">{{ patient.get('age', 'N/A') }} yrs &bull; {% if patient.get('sex') == 1 %}Male{% elif patient.get('sex') == 0 %}Female{% else %}{{ patient.get('sex', 'N/A') }}{% endif %}</td>
-                            </tr>
-                            <tr>
-                                <td class="param-name">Chest Pain Type</td>
-                                <td class="param-val">{{ patient.get('cp_text', patient.get('cp', 'N/A')) }}</td>
-                            </tr>
-                            <tr>
-                                <td class="param-name">Resting BP</td>
-                                <td class="param-val">{{ patient.get('trestbps', 'N/A') }} mmHg</td>
-                            </tr>
-                            <tr>
-                                <td class="param-name">Cholesterol</td>
-                                <td class="param-val">{{ patient.get('chol', 'N/A') }} mg/dL</td>
-                            </tr>
-                            <tr>
-                                <td class="param-name">Fasting Blood Sugar</td>
-                                <td class="param-val">{% if patient.get('fbs') == 1 %}&gt; 120 mg/dL{% else %}&le; 120 mg/dL{% endif %}</td>
-                            </tr>
-                            <tr>
-                                <td class="param-name">Resting ECG</td>
-                                <td class="param-val">Type {{ patient.get('restecg', 'N/A') }}</td>
-                            </tr>
-                            <tr>
-                                <td class="param-name">Max Heart Rate</td>
-                                <td class="param-val">{{ patient.get('thalach', 'N/A') }} bpm</td>
-                            </tr>
-                            <tr>
-                                <td class="param-name">Exercise Angina</td>
-                                <td class="param-val">{% if patient.get('exang') == 1 %}Yes{% else %}No{% endif %}</td>
-                            </tr>
-                            <tr>
-                                <td class="param-name">ST Depression (oldpeak)</td>
-                                <td class="param-val">{{ patient.get('oldpeak', 'N/A') }} mm</td>
-                            </tr>
-                            <tr>
-                                <td class="param-name">ST Slope</td>
-                                <td class="param-val">Slope {{ patient.get('slope', 'N/A') }}</td>
-                            </tr>
-                            <tr>
-                                <td class="param-name">Major Vessels (ca)</td>
-                                <td class="param-val">{{ patient.get('ca', 'N/A') }} colored</td>
-                            </tr>
-                            <tr>
-                                <td class="param-name">Thalassemia</td>
-                                <td class="param-val">Type {{ patient.get('thal', 'N/A') }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
         </div>
 
+    </div>
+
+    <!-- CLINICAL PARAMETER REFERENCE SUMMARY TABLE -->
+    <div class="table-panel">
+        <div class="panel-header">
+            <h4>&#x1F9EC; Complete Feature Summary</h4>
+            <span style="font-size:12px; color:#94a3b8;">13 Predictors</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="clinical-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">Clinical Feature</th>
+                        <th style="width: 50%;">Recorded Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="param-name">Age / Sex</td>
+                        <td class="param-val">{{ patient.get('age', 'N/A') }} yrs &bull; {% if patient.get('sex') == 1 %}Male{% elif patient.get('sex') == 0 %}Female{% else %}{{ patient.get('sex', 'N/A') }}{% endif %}</td>
+                    </tr>
+                    <tr>
+                        <td class="param-name">Chest Pain Type</td>
+                        <td class="param-val">{{ patient.get('cp_text', patient.get('cp', 'N/A')) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="param-name">Resting BP</td>
+                        <td class="param-val">{{ patient.get('trestbps', 'N/A') }} mmHg</td>
+                    </tr>
+                    <tr>
+                        <td class="param-name">Cholesterol</td>
+                        <td class="param-val">{{ patient.get('chol', 'N/A') }} mg/dL</td>
+                    </tr>
+                    <tr>
+                        <td class="param-name">Fasting Blood Sugar</td>
+                        <td class="param-val">{% if patient.get('fbs') == 1 %}&gt; 120 mg/dL{% else %}&le; 120 mg/dL{% endif %}</td>
+                    </tr>
+                    <tr>
+                        <td class="param-name">Resting ECG</td>
+                        <td class="param-val">Type {{ patient.get('restecg', 'N/A') }}</td>
+                    </tr>
+                    <tr>
+                        <td class="param-name">Max Heart Rate</td>
+                        <td class="param-val">{{ patient.get('thalach', 'N/A') }} bpm</td>
+                    </tr>
+                    <tr>
+                        <td class="param-name">Exercise Angina</td>
+                        <td class="param-val">{% if patient.get('exang') == 1 %}Yes{% else %}No{% endif %}</td>
+                    </tr>
+                    <tr>
+                        <td class="param-name">ST Depression (oldpeak)</td>
+                        <td class="param-val">{{ patient.get('oldpeak', 'N/A') }} mm</td>
+                    </tr>
+                    <tr>
+                        <td class="param-name">ST Slope</td>
+                        <td class="param-val">Slope {{ patient.get('slope', 'N/A') }}</td>
+                    </tr>
+                    <tr>
+                        <td class="param-name">Major Vessels (ca)</td>
+                        <td class="param-val">{{ patient.get('ca', 'N/A') }} colored</td>
+                    </tr>
+                    <tr>
+                        <td class="param-name">Thalassemia</td>
+                        <td class="param-val">Type {{ patient.get('thal', 'N/A') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- BOTTOM ACTIONS -->
@@ -1242,25 +1397,28 @@ if (probability < 30) {
     riskColor = "#ef4444";   // High → Red
 }
 
-new Chart(document.getElementById('riskChart'), {
-    type: 'doughnut',
-    data: {
-        datasets: [{
-            data: [probability, Math.max(0, 100 - probability)],
-            backgroundColor: [riskColor, "rgba(148, 163, 184, 0.12)"],
-            borderWidth: 0
-        }]
-    },
-    options: {
-        cutout: '76%',
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: { display: false },
-            tooltip: { enabled: false }
+const riskCanvas = document.getElementById('riskChart');
+if (riskCanvas) {
+    new Chart(riskCanvas, {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [probability, Math.max(0, 100 - probability)],
+                backgroundColor: [riskColor, "rgba(148, 163, 184, 0.12)"],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            cutout: '76%',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: false }
+            }
         }
-    }
-});
+    });
+}
 
 /* CLINICAL PARAMETER OVERVIEW BAR CHART */
 const featureCtx = document.getElementById('featureChart');
